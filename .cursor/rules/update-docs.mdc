@@ -1,0 +1,16 @@
+---
+description: When the user says "update docs", refresh the five project docs from the work actually done.
+alwaysApply: true
+---
+
+# Update docs
+
+When the user says "update docs", revise only these files so they match the repo and the work done in the session:
+
+- `docs/Project_Overview.md`
+- `docs/Technical_Architecture.md`
+- `docs/Implementation_Roadmap.md`
+- `docs/Decisions.md`
+- `docs/Project Status.md`
+
+Record what is on disk and what was decided. Do not invent product scope, schema, or phases that were not specified. Move roadmap and status checklists to done only when the corresponding files exist. Add a new ADR only when a decision was actually made.
