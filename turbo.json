@@ -1,13 +1,21 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "tasks": {
+    "contract:emit": {
+      "inputs": ["src/prisma/contract.prisma", "prisma.config.ts"],
+      "outputs": ["src/prisma/contract.json", "src/prisma/contract.d.ts"]
+    },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "dependsOn": ["^contract:emit"]
     },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^contract:emit"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "check-types": {
+      "dependsOn": ["^contract:emit"]
     },
     "lint": {
       "dependsOn": ["^lint"]

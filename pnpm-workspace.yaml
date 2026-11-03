@@ -15,3 +15,18 @@ minimumReleaseAgeExclude:
   - "@next/swc-win32-x64-msvc@16.4.4"
   - cn@0.5.2
   - next@16.4.4
+  - prisma@8.0.0-rc.30
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  workerd: true
+permissions:
+  "@prisma/engines":
+    build: false
+  "@prisma/orm-postgres":
+    skills: false
+  dotenv:
+    skills: false
+  prisma:
+    build: false
+    skills: true
