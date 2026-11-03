@@ -1,0 +1,25 @@
+{
+    "name": "@repo/db",
+    "type": "module",
+    "version": "0.0.0",
+    "private": true,
+    "exports": {
+      ".": "./src/index.ts"
+    },
+    "scripts": {
+      "contract:emit": "prisma contract emit",
+      "migration:plan": "prisma migration plan",
+      "db:migrate": "prisma db migrate --advance-ref db",
+      "migration:status": "prisma migration status",
+      "check-types": "tsc --noEmit"
+    },
+    "dependencies": {
+      "@prisma/orm-postgres": "8.0.0-rc.22",
+      "dotenv": "^18.0.9"
+    },
+    "devDependencies": {
+      "@prisma/cli-engine": "0.9.0",
+      "@types/node": "^26.6.6",
+      "prisma": "8.0.0-rc.30"
+    }
+}

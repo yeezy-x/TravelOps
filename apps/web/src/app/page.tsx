@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+import { db } from "@repo/db";
+
 export default function HomePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F8F7F2] px-6">
@@ -14,8 +17,29 @@ export default function HomePage() {
           Thoughtfully curated journeys through Kerala and beyond.
         </p>
 
-        <p className="mt-8 text-sm text-stone-400">Your journey begins here.</p>
+        <Suspense fallback={<p className="mt-8 text-sm text-stone-400">Loading travelers...</p>}>
+          <UserList />
+        </Suspense>
       </section>
     </main>
+  );
+}
+
+async function UserList() {
+  const users = await db.orm.public.User.select("id", "email", "name").all();
+
+  if (users.length === 0) {
+    return <p className="mt-8 text-sm text-stone-400">No travelers yet.</p>;
+  }
+
+  return (
+    <ul className="mx-auto mt-8 max-w-md space-y-2 text-left text-sm text-stone-600">
+      {users.map((user) => (
+        <li key={user.id}>
+          {user.id} · {user.email}
+          {user.name ? ` · ${user.name}` : ""}
+        </li>
+      ))}
+    </ul>
   );
 }
