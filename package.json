@@ -1,0 +1,20 @@
+{
+  "name": "kerala-trails",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.0",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0"
+  },
+  "packageManager": "pnpm@12.16.1"
+}
