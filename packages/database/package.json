@@ -4,23 +4,28 @@
     "version": "0.0.0",
     "private": true,
     "exports": {
-      ".": "./src/index.ts"
+        ".": "./src/index.ts"
     },
     "scripts": {
-      "contract:emit": "prisma contract emit",
-      "migration:plan": "prisma migration plan",
-      "db:migrate": "prisma db migrate --advance-ref db",
-      "migration:status": "prisma migration status",
-      "check-types": "tsc --noEmit"
+        "contract:emit": "prisma contract emit",
+        "migration:plan": "prisma migration plan",
+        "db:migrate": "prisma db migrate --advance-ref db",
+        "migration:status": "prisma migration status",
+        "check-types": "tsc --noEmit",
+        "seed": "tsx src/seed.ts",
+        "verify:repository": "tsx src/verify-repository.ts",
+        "verify:seed": "tsx src/verify-seed.ts"
     },
     "dependencies": {
-      "@repo/shared": "workspace:*",
-      "@prisma/orm-postgres": "8.0.0-rc.22",
-      "dotenv": "^18.0.9"
+        "@prisma/orm-postgres": "8.0.0-rc.22",
+        "@repo/shared": "workspace:*",
+        "bcryptjs": "^3.0.3",
+        "dotenv": "^18.0.9",
+        "tsx": "^4.23.15"
     },
     "devDependencies": {
-      "@prisma/cli-engine": "0.9.0",
-      "@types/node": "^26.6.6",
-      "prisma": "8.0.0-rc.30"
+        "@prisma/cli-engine": "0.9.0",
+        "@types/node": "^26.6.6",
+        "prisma": "8.0.0-rc.30"
     }
 }
