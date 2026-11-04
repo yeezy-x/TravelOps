@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { db } from "@repo/db";
+import { connection } from "next/server"
 
 export default function HomePage() {
   return (
@@ -26,6 +27,7 @@ export default function HomePage() {
 }
 
 async function UserList() {
+  await connection()
   const users = await db.orm.public.User.select("id", "email", "name").all();
 
   if (users.length === 0) {
