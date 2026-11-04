@@ -1,0 +1,19 @@
+{
+    "name": "@repo/shared",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+      ".": "./src/index.ts",
+      "./enums": "./src/enums.ts",
+      "./package-schema": "./src/package.schema.ts",
+      "./price-schema": "./src/price.schema.ts",
+      "./enquiry-schema": "./src/enquiry.schema.ts"
+    },
+    "dependencies": {
+      "zod": "^4.6.7"
+    },
+    "devDependencies": {
+      "typescript": "^5.9.0"
+    }
+  }
