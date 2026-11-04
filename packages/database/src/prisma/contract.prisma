@@ -1,21 +1,378 @@
 // use prisma-8
-
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt TimestamptzString @default(now())
-  updatedAt DateTime(as: string) @onCreate(now()) @onUpdate(now())
+enum Role {
+  ADMIN
+  CONSULTANT
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt DateTime(as: string) @onCreate(now()) @onUpdate(now())
+enum VersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PriceBasis {
+  PER_PERSON_TWIN
+}
+
+enum GstMode {
+  EXTRA
+  INCLUDED
+}
+
+enum EnquiryStatus {
+  NEW
+  IN_REVIEW
+  REPLIED
+  CLOSED
+}
+
+enum AiStatus {
+  PENDING
+  COMPLETE
+  FAILED
+}
+
+enum BudgetAssessment {
+  WITHIN_KNOWN_COSTS
+  EXCEEDS_KNOWN_LOWER_BOUND
+  UNCERTAIN
+}
+
+enum ReplyDraftStatus {
+  DRAFT
+  APPROVED
+}
+
+enum ReplyDraftSource {
+  AI
+  MANUAL
+}
+
+model User {
+  id           String   @id @onCreate(cuid(2))
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+
+  assignedEnquiries Enquiry[] @relation("EnquiryAssignee")
+  notes             EnquiryNote[]
+  activityLogs      ActivityLog[]
+  authoredVersions  PackageVersion[] @relation("VersionAuthor")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([email])
+}
+
+model Destination {
+  id     String @id @onCreate(cuid(2))
+  name   String
+  slug   String @unique
+  region String
+
+  packageVersions PackageVersionDestination[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+}
+
+model Package {
+  id   String @id @onCreate(cuid(2))
+  code String @unique
+  slug String @unique
+
+  publishedVersionId String? @unique
+
+  versions PackageVersion[] @relation("PackageVersions")
+
+  publishedVersion PackageVersion? @relation(
+    "PublishedVersion",
+    fields: [publishedVersionId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  enquiries Enquiry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([slug])
+  @@index([code])
+}
+
+model PackageVersion {
+  id            String        @id @onCreate(cuid(2))
+  packageId     String
+  versionNumber Int
+  status        VersionStatus
+
+  title          String
+  summary        String
+  durationDays   Int
+  durationNights Int
+  category       String
+  starRating     Int
+
+  content Json
+
+  changeNote String?
+
+  authorId String
+  author   User @relation(
+    "VersionAuthor",
+    fields: [authorId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  package Package @relation(
+    "PackageVersions",
+    fields: [packageId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  publishedByPackage Package? @relation("PublishedVersion")
+
+  destinations  PackageVersionDestination[]
+  seasonalPrices SeasonalPrice[]
+  enquiries     Enquiry[]
+  suggestions   PackageSuggestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@unique([packageId, versionNumber])
+  @@index([status])
+  @@index([packageId])
+}
+
+model PackageVersionDestination {
+  packageVersionId String
+  destinationId    String
+
+  packageVersion PackageVersion @relation(
+    fields: [packageVersionId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  destination Destination @relation(
+    fields: [destinationId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  @@id([packageVersionId, destinationId])
+  @@index([destinationId])
+}
+
+model SeasonalPrice {
+  id               String @id @onCreate(cuid(2))
+  packageVersionId String
+
+  label  String
+  months Int[]
+
+  pricePerPerson Numeric(10, 2)
+
+  basis   PriceBasis
+  gstMode GstMode
+  gstRate Numeric(4, 2)
+
+  packageVersion PackageVersion @relation(
+    fields: [packageVersionId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([packageVersionId])
+}
+
+model Enquiry {
+  id String @id @onCreate(cuid(2))
+
+  name    String
+  email   String
+  phone   String
+  message String
+
+  adults   Int?
+  children Int?
+
+  packageId        String?
+  packageVersionId String?
+
+  package Package? @relation(
+    fields: [packageId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  packageVersion PackageVersion? @relation(
+    fields: [packageVersionId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  priceSnapshot Json?
+
+  status   EnquiryStatus @default(NEW)
+  aiStatus AiStatus      @default(PENDING)
+
+  assigneeId String?
+  assignee   User? @relation(
+    "EnquiryAssignee",
+    fields: [assigneeId],
+    references: [id],
+    onDelete: SetNull
+  )
+
+  whatsappConsent   Boolean   @default(false)
+  whatsappConsentAt DateTime?
+
+  aiExtraction       AiExtraction?
+  suggestions        PackageSuggestion[]
+  replyDrafts        ReplyDraft[]
+  notes              EnquiryNote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([createdAt])
+  @@index([packageId])
+  @@index([packageVersionId])
+}
+
+model AiExtraction {
+  id        String @id @onCreate(cuid(2))
+  enquiryId String @unique
+
+  status AiStatus
+
+  payload       Json?
+  confidence    Numeric(4, 2)?
+  missingFields Json?
+
+  model String?
+  error String?
+
+  enquiry Enquiry @relation(
+    fields: [enquiryId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+}
+
+model PackageSuggestion {
+  id        String @id @onCreate(cuid(2))
+  enquiryId String
+
+  packageVersionId String
+
+  score       Numeric(5, 2)
+  reasonCodes Json
+
+  budgetAssessment BudgetAssessment
+  explanation      String
+
+  enquiry Enquiry @relation(
+    fields: [enquiryId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  packageVersion PackageVersion @relation(
+    fields: [packageVersionId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([enquiryId])
+  @@index([packageVersionId])
+}
+
+
+model ReplyDraft {
+  id        String @id @onCreate(cuid(2))
+  enquiryId String
+
+  body   String
+  status ReplyDraftStatus @default(DRAFT)
+  source ReplyDraftSource
+
+  enquiry Enquiry @relation(
+    fields: [enquiryId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([enquiryId])
+}
+
+model EnquiryNote {
+  id        String @id @onCreate(cuid(2))
+  enquiryId String
+  authorId  String
+
+  body String
+
+  enquiry Enquiry @relation(
+    fields: [enquiryId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  author User @relation(
+    fields: [authorId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([enquiryId])
+  @@index([authorId])
+}
+
+model ActivityLog {
+  id String @id @onCreate(cuid(2))
+
+  actorId String?
+  actor   User? @relation(
+    fields: [actorId],
+    references: [id],
+    onDelete: SetNull
+  )
+
+  action     String
+  entityType String
+  entityId   String
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

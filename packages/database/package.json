@@ -14,6 +14,7 @@
       "check-types": "tsc --noEmit"
     },
     "dependencies": {
+      "@repo/shared": "workspace:*",
       "@prisma/orm-postgres": "8.0.0-rc.22",
       "dotenv": "^18.0.9"
     },
