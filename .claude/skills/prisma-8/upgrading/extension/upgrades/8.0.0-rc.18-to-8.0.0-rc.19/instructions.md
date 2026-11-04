@@ -29,7 +29,7 @@ changes:
         - 'import\s*(?:type\s*)?(?:[\w$]+\s*,\s*)?\{[^}]*(?<![\w$])(?:PostgresClient|PostgresServerlessClient|PostgresServerlessConnection|PostgresStaticContext|PostgresStaticMembers|SqliteClient|SqliteStaticContext|RoleBoundDb|ServiceRoleDb|SupabaseInternalDb|PostgresTransactionContext|SqliteTransactionContext)(?![\w$])[^}]*\}\s*from\s*[''"]@prisma/orm-'
         - '\.runtime\(\)\s*\.(?:query|execute)\('
         - '(?<![\w$])(?:runtimeTarget|runtimeStorageHash)\s*:|\.(?:runtimeTarget|runtimeStorageHash)\b|[''"](?:runtimeTarget|runtimeStorageHash)[''"]'
-        - 'Ad-hoc execute received a bind-site slot|Plan target does not match runtime target|Plan storage hash does not match runtime contract'
+        - "Ad-hoc execute received a bind-site slot|Plan target does not match runtime target|Plan storage hash does not match runtime contract"
   - id: transaction-query-members
     summary: |
       Additive for code that only uses these types: a transaction now offers the client's query members (`sql`, `orm`, `raw`, `prepare`, `query`, `execute`) on every SQL client, a Supabase role-bound client gains `prepare`, and SQLite's `db.orm` gains `fragment`. Code that builds its own object of one of the changed types must add the new members. Changed: `PostgresTransactionContext` (adds `raw` and `prepare`), `SqliteTransactionContext` (adds `raw` and `prepare`; `orm` is now `SqliteOrm`), `RoleBoundDb` (adds `prepare`; `transaction` passes a `SupabaseTransactionContext`). New: `PostgresQueryMembers` and `SqliteQueryMembers` (the query members a client and its transactions share), `SupabaseTransactionContext`, `SqliteOrm`, and from the ORM client `OrmClientRootMembers` and `PrepareMember`. The detection matches a file that imports one of the changed types that 8.0.0-rc.18 had, or `SqliteClient`, whose `orm` changed, from a Prisma package.
@@ -98,7 +98,7 @@ changes:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
         - '\bCachedRows\b'
-        - 'createInMemoryCacheStore<[^>(]*,'
+        - "createInMemoryCacheStore<[^>(]*,"
         - '(?<![\s\S])(?![\s\S]*\bCachedValue\b)(?=[\s\S]*[''"](?:@prisma/orm-extension-middleware-cache|@internal/middleware-cache)[''"])[\s\S]*(?<![\w$])(?:CacheStore|CacheEntry)(?![\w$])'
   - id: queryable-carries-the-activity-source
     summary: |
@@ -275,7 +275,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts}"
       matches:
-        - 'enforceDataTypeInvariants|DataTypeInvariantInput'
+        - "enforceDataTypeInvariants|DataTypeInvariantInput"
   - id: default-functions-lower-to-database-defaults-only
     summary: |
       A default function in `controlMutationDefaults.defaultFunctionRegistry` can no longer lower to a client generator: `LoweredDefaultValue` has only its `{ kind: 'storage' }` arm. A function that generated a value in the client, such as `slugid()`, becomes a generator function: contribute a `GeneratorFunctionContribution` in `generatorFunctions` on the pack ref and the control descriptor, with a binding for each codec it fills, and keep the generator descriptor. Users then write `@onCreate(slugid())` instead of `@default(slugid())`. The detection matches files that lower a default function to a generator.
@@ -297,7 +297,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts}"
       matches:
-        - 'builtinGeneratorRegistryMetadata'
+        - "builtinGeneratorRegistryMetadata"
         - "\\{\\s*id:\\s*['\"](?:uuidv4|uuidv7|cuid2|ulid|nanoid|ksuid)['\"]\\s*\\}"
   - id: sql-target-declares-integer-argument-generators
     summary: |
@@ -355,7 +355,7 @@ changes:
       glob: "**/*.{ts,mts,cts}"
       matches:
         - 'renderOutputType\('
-        - 'renderOutputType:'
+        - "renderOutputType:"
   - id: psl-interpreter-contract-capabilities
     summary: |
       `interpretPslDocumentToSqlContract` now writes the enabled capabilities it is given in `capabilities` into the contract it returns, joined with the target's and the extensions', so a contract read from PSL carries its adapter's capabilities as one built with `defineContract` does. Before, it used them only to check the schema and left them out of the contract. Code that called it directly and compared the contract's `capabilities` to the target's and extensions' alone now also sees the ones it passed in. The detection matches calls of the interpreter.
@@ -389,7 +389,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,tsx,json}"
       matches:
-        - 'MongoModelStorage|MongoModelDefinition'
+        - "MongoModelStorage|MongoModelDefinition"
         - '"storage"\s*:\s*\{\s*(?:"collection"\s*:\s*"[^"]*"\s*)?\}'
         - '(?<![\w$])storage\s*:\s*\{\s*(?:readonly\s+)?collection\s*:\s*[''"][^''"]*[''"]\s*;?\s*\}'
   - id: mongo-validator-derivation-moves-to-mongo-contract
@@ -642,7 +642,7 @@ A client, static entry or `mongoQuery()` no longer takes `contractJson`, and it 
 const db = postgres<Contract>({ contractJson, extensions: [myPack] });
 
 // After
-import { contractFromJson } from '@prisma/orm-postgres/static';
+import { contractFromJson } from "@prisma/orm-postgres/static";
 
 const db = postgres({ contract: contractFromJson<Contract>(contractJson), extensions: [myPack] });
 ```
@@ -669,8 +669,8 @@ This concerns extension packages whose code, examples or tests build a client an
 
 ```ts
 // Before
-import { orm } from '@prisma/orm-postgres/orm-client';
-import { db } from './prisma/db';
+import { orm } from "@prisma/orm-postgres/orm-client";
+import { db } from "./prisma/db";
 
 export const posts = orm({
   runtime: db.runtime(),
@@ -698,7 +698,7 @@ A type written with only the contract, such as `PostgresClient<Contract>`, still
 Every SQL client now runs a plan itself and renders the SQL a plan would send:
 
 ```ts
-const plan = db.sql.public.post.select('id', 'title').limit(10).build();
+const plan = db.sql.public.post.select("id", "title").limit(10).build();
 console.log(db.toSql(plan)); // { sql: 'SELECT … LIMIT 10', params: [] }
 for await (const row of db.query(plan)) console.log(row);
 await db.execute(db.raw.sql`UPDATE post SET pinned = false`.affectedCount().build());
@@ -722,23 +722,23 @@ Inside `db.transaction(async (tx) => …)`, `tx` now has the client's query memb
 
 Code that only reads the client types needs no change for `client-query-and-to-sql` and `transaction-query-members`. Code that creates an object of one of them, for example a test double typed `PostgresClient<Contract>` or `PostgresTransactionContext<Contract>`, must add the new members:
 
-| Type | New or changed members |
-| --- | --- |
-| `PostgresClient`, `PostgresServerlessConnection` (`@prisma/orm-postgres/runtime`, `/serverless`) | `query`, `execute`, `toSql` |
-| `PostgresServerlessClient`, `PostgresStaticContext`, `PostgresStaticMembers` | `toSql` |
-| `PostgresQueryMembers` | new: the query members a client and its transactions share, including `query`, `execute` and `toSql`; `PostgresClient`, `PostgresServerlessConnection` and `PostgresTransactionContext` extend it |
-| `PostgresTransactionContext` (`@prisma/orm-postgres/runtime`) | `raw`, `prepare`, `toSql` |
-| `SqliteClient` (`@prisma/orm-sqlite/runtime`) | `query`, `execute`, `toSql`; `orm` is `SqliteOrm`, which adds `fragment` |
-| `SqliteStaticContext` | `toSql` |
-| `SqliteStaticMembers` (`@prisma/orm-sqlite/runtime`) | new: the static context plus `stack`, which `SqliteClient` now extends |
-| `SqliteQueryMembers` | new: the query members a client and its transactions share, including `query`, `execute` and `toSql`; `SqliteClient` and `SqliteTransactionContext` extend it |
-| `SqliteTransactionContext` (`@prisma/orm-sqlite/runtime`) | `raw`, `prepare`, `toSql`; `orm` is `SqliteOrm`, the namespace's models plus `fragment` |
-| `RoleBoundDb` (`@prisma/orm-extension-supabase/runtime`) | `prepare`, `toSql`, and the two prepared-statement entry points a statement's `query` and `execute` call; `query` and `execute` take the plan type every SQL client shares; it extends `PostgresQueryMembers`; `transaction` passes a `SupabaseTransactionContext` instead of a plain `TransactionContext` |
-| `ServiceRoleDb` (`@prisma/orm-extension-supabase/runtime`) | `toSql`; `query` and `execute` take the plan type every SQL client shares |
-| `SupabaseTransactionContext` | new; has `toSql` |
-| `SupabaseInternalDb` (the service role's `supabase` member) | `toSql`, over the Supabase contract |
-| `OrmClientRootMembers` (ORM client) | newly exported: the members of the ORM client beside its namespaces, today `fragment` |
-| `PrepareMember` (ORM client) | newly exported: the `prepare` member a client and its transactions offer |
+| Type                                                                                             | New or changed members                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PostgresClient`, `PostgresServerlessConnection` (`@prisma/orm-postgres/runtime`, `/serverless`) | `query`, `execute`, `toSql`                                                                                                                                                                                                                                                                                |
+| `PostgresServerlessClient`, `PostgresStaticContext`, `PostgresStaticMembers`                     | `toSql`                                                                                                                                                                                                                                                                                                    |
+| `PostgresQueryMembers`                                                                           | new: the query members a client and its transactions share, including `query`, `execute` and `toSql`; `PostgresClient`, `PostgresServerlessConnection` and `PostgresTransactionContext` extend it                                                                                                          |
+| `PostgresTransactionContext` (`@prisma/orm-postgres/runtime`)                                    | `raw`, `prepare`, `toSql`                                                                                                                                                                                                                                                                                  |
+| `SqliteClient` (`@prisma/orm-sqlite/runtime`)                                                    | `query`, `execute`, `toSql`; `orm` is `SqliteOrm`, which adds `fragment`                                                                                                                                                                                                                                   |
+| `SqliteStaticContext`                                                                            | `toSql`                                                                                                                                                                                                                                                                                                    |
+| `SqliteStaticMembers` (`@prisma/orm-sqlite/runtime`)                                             | new: the static context plus `stack`, which `SqliteClient` now extends                                                                                                                                                                                                                                     |
+| `SqliteQueryMembers`                                                                             | new: the query members a client and its transactions share, including `query`, `execute` and `toSql`; `SqliteClient` and `SqliteTransactionContext` extend it                                                                                                                                              |
+| `SqliteTransactionContext` (`@prisma/orm-sqlite/runtime`)                                        | `raw`, `prepare`, `toSql`; `orm` is `SqliteOrm`, the namespace's models plus `fragment`                                                                                                                                                                                                                    |
+| `RoleBoundDb` (`@prisma/orm-extension-supabase/runtime`)                                         | `prepare`, `toSql`, and the two prepared-statement entry points a statement's `query` and `execute` call; `query` and `execute` take the plan type every SQL client shares; it extends `PostgresQueryMembers`; `transaction` passes a `SupabaseTransactionContext` instead of a plain `TransactionContext` |
+| `ServiceRoleDb` (`@prisma/orm-extension-supabase/runtime`)                                       | `toSql`; `query` and `execute` take the plan type every SQL client shares                                                                                                                                                                                                                                  |
+| `SupabaseTransactionContext`                                                                     | new; has `toSql`                                                                                                                                                                                                                                                                                           |
+| `SupabaseInternalDb` (the service role's `supabase` member)                                      | `toSql`, over the Supabase contract                                                                                                                                                                                                                                                                        |
+| `OrmClientRootMembers` (ORM client)                                                              | newly exported: the members of the ORM client beside its namespaces, today `fragment`                                                                                                                                                                                                                      |
+| `PrepareMember` (ORM client)                                                                     | newly exported: the `prepare` member a client and its transactions offer                                                                                                                                                                                                                                   |
 
 A hand-built `RoleBoundDb`, such as a test double, must also implement the two prepared-statement entry points, keyed by the symbols `preparedStatementQuery` and `preparedStatementExecute`. Import them from `@prisma/orm-postgres/family-runtime/internal/prepared-query` (or `@prisma/orm-family-sql/runtime/internal/prepared-query`). Like every `internal/` entry, it can change without notice.
 
@@ -768,11 +768,11 @@ async activityStarted(activity: Activity, ctx) {}
 
 ```ts
 // before
-if (result.kind === 'transaction') return;
+if (result.kind === "transaction") return;
 record(result.latencyMs);
 
 // after
-if (result.kind !== 'statement') return;
+if (result.kind !== "statement") return;
 record(result.latencyMs);
 ```
 
@@ -787,15 +787,15 @@ An extension can start an activity for an act of its own, such as a report that 
 **Register the kind.** A client kind contains a hyphen; a kind without one is rejected with `RUNTIME.ACTIVITY_KIND_RESERVED`. Registering the result type is optional. The file that augments the entry must also import from it, or TypeScript reports that the module cannot be found:
 
 ```ts
-import type { ClientActivityResult } from '@prisma/orm-postgres/components/runtime';
+import type { ClientActivityResult } from "@prisma/orm-postgres/components/runtime";
 
-declare module '@prisma/orm-postgres/components/runtime' {
+declare module "@prisma/orm-postgres/components/runtime" {
   interface ClientActivityRegistry {
-    'report-run': { result: { readonly emails: readonly string[] } };
+    "report-run": { result: { readonly emails: readonly string[] } };
   }
 }
 
-export type ReportResult = ClientActivityResult<'report-run'>;
+export type ReportResult = ClientActivityResult<"report-run">;
 ```
 
 The registry types the handle side only: `call.intercepted.result` and `call.end({ result })`. In middleware hooks the result of a client activity is `unknown`, even after `result.kind === 'report-run'`, because the hook types must accept unregistered kinds; check or cast the value there.
@@ -803,26 +803,26 @@ The registry types the handle side only: `call.intercepted.result` and `call.end
 **Start, use and end it.** Pass a function that derives the content hash from the plan with `planContentHashOn`. The runtime calls it only when a middleware calls `activity.contentHash()`, and once per activity. It equals the digest `ctx.contentHash(exec)` returns for the statement's execution plan only when `beforeCompile` gives the same result for the plan in both places, no `beforeEncode` hook changes the parameters, and the codecs encode deterministically. (For `planContentHashOn`, `beforeCompile` runs with the scope and parent of the queryable it is called on and with fresh state, so on the runtime itself it has no parent. For the statement, it runs beneath the handle, with the state its `activityStarted` hooks wrote.) A cache should key on the activity's own content hash and not rely on the two being equal. End every handle, in a `finally`, or `close()` waits for it forever:
 
 ```ts
-import { planContentHashOn, startActivityOn } from '@prisma/orm-postgres/family-runtime';
-import type { SqlQueryPlan } from '@prisma/orm-postgres/relational-core/plan';
-import type { PostgresClient } from '@prisma/orm-postgres/runtime';
+import { planContentHashOn, startActivityOn } from "@prisma/orm-postgres/family-runtime";
+import type { SqlQueryPlan } from "@prisma/orm-postgres/relational-core/plan";
+import type { PostgresClient } from "@prisma/orm-postgres/runtime";
 
 async function runReport(db: PostgresClient<Contract>, plan: SqlQueryPlan<{ email: string }>) {
   const runtime = db.runtime();
   const call = await startActivityOn(runtime, {
-    kind: 'report-run',
+    kind: "report-run",
     contentHash: () => planContentHashOn(runtime, plan),
   });
-  let outcome: 'succeeded' | 'failed' = 'failed';
+  let outcome: "succeeded" | "failed" = "failed";
   let result: { readonly emails: readonly string[] } | undefined;
   try {
     if (call.intercepted) {
-      outcome = 'succeeded';
+      outcome = "succeeded";
       return call.intercepted.result.emails;
     }
     const rows = await call.query(plan).toArray();
     result = { emails: rows.map((row) => row.email) };
-    outcome = 'succeeded';
+    outcome = "succeeded";
     return result.emails;
   } finally {
     await call.end({ outcome, ...(result === undefined ? {} : { result }) });
@@ -835,23 +835,27 @@ Statements sent through `call` are the activity's children. `call.transaction()`
 **Serve it from middleware.** `intercept.onActivity(activity: ClientActivity, ctx)` runs after `activityStarted`. The first handler that returns `{ result }` wins, and the handle's `intercepted` is set. The ended result carries `source: 'middleware'` when the client then ends without a result:
 
 ```ts
-import type { SqlMiddleware } from '@prisma/orm-postgres/family-runtime';
+import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 
 const served = new Map<string, unknown>();
 
 const reportCache: SqlMiddleware = {
-  name: 'report-cache',
-  familyId: 'sql',
+  name: "report-cache",
+  familyId: "sql",
   intercept: {
     async onActivity(activity) {
-      if (activity.kind !== 'report-run') return undefined;
+      if (activity.kind !== "report-run") return undefined;
       const hit = served.get(await activity.contentHash());
       return hit === undefined ? undefined : { result: hit };
     },
   },
   async activityEnded(activity, result) {
-    if (activity.kind !== 'report-run' || result.kind !== 'report-run') return;
-    if (result.outcome === 'succeeded' && result.source === 'client' && result.result !== undefined) {
+    if (activity.kind !== "report-run" || result.kind !== "report-run") return;
+    if (
+      result.outcome === "succeeded" &&
+      result.source === "client" &&
+      result.result !== undefined
+    ) {
       served.set(await activity.contentHash(), result.result);
     }
   },
@@ -864,10 +868,10 @@ The statements an ORM call sends carry only the reserved keys the ORM sets. A mi
 
 ```ts
 const audit: SqlMiddleware = {
-  name: 'audit',
-  familyId: 'sql',
+  name: "audit",
+  familyId: "sql",
   async activityStarted(activity) {
-    if (activity.kind !== 'orm-call') return;
+    if (activity.kind !== "orm-call") return;
     const actor = auditAnnotation.read(activity);
     if (actor) log(actor);
   },
@@ -881,7 +885,7 @@ A middleware can answer the call through `intercept.onActivity`. The value must 
 A cache store for `@internal/middleware-cache` holds `CachedValue`, which is `{ kind: 'statement-rows', rows }` or `{ kind: 'call-result', result }`, instead of `CachedRows`. `CacheStore` and `CacheEntry` default their value type to `CachedValue`, and `createCacheMiddleware` accepts only a `CacheStore<TMeta, CachedValue>`:
 
 ```ts
-import type { CachedValue, CacheStore } from '@internal/middleware-cache';
+import type { CachedValue, CacheStore } from "@internal/middleware-cache";
 
 const store: CacheStore<unknown, CachedValue> = {
   // get, set and unset as before; value is now { kind: 'statement-rows', rows } or { kind: 'call-result', result }
@@ -913,8 +917,8 @@ const session: RoleSession & TransactionStartTarget & ActivitySourceTarget = {
 `db.runtime()` passed straight to `orm()` already carries an activity source. A facade, such as `postgres()`, that builds its own runtime object for the ORM, such as one that looks up its runtime on every call, gives it the member:
 
 ```ts
-import { activitySource, delegatingActivitySource } from '@prisma/orm-family-sql/runtime';
-import { orm } from '@prisma/orm-postgres/orm-client';
+import { activitySource, delegatingActivitySource } from "@prisma/orm-family-sql/runtime";
+import { orm } from "@prisma/orm-postgres/orm-client";
 
 const client = orm({
   runtime: {
@@ -971,12 +975,12 @@ A collection's new `using` member holds the collection methods that packages con
 
 A codec converts between three forms of a value: the application's value, the value the database driver sends and returns (the wire value), and the value a contract stores, now a `DataTypeValue` of the codec's data type. Four methods replace the old four:
 
-| Before | After | Converts |
-| --- | --- | --- |
-| `encode(value, ctx)` | `toWire(value, ctx)` | application value to wire value |
-| `decode(wire, ctx)` | `fromWire(wire, ctx)` | wire value to application value |
-| `encodeJson(value)` | `toDataTypeValue(value)` | application value to stored value |
-| `decodeJson(json)` | `fromDataTypeValue(value)` | stored value to application value |
+| Before               | After                      | Converts                          |
+| -------------------- | -------------------------- | --------------------------------- |
+| `encode(value, ctx)` | `toWire(value, ctx)`       | application value to wire value   |
+| `decode(wire, ctx)`  | `fromWire(wire, ctx)`      | wire value to application value   |
+| `encodeJson(value)`  | `toDataTypeValue(value)`   | application value to stored value |
+| `decodeJson(json)`   | `fromDataTypeValue(value)` | stored value to application value |
 
 `toDataTypeValue` returns a `DataTypeValue`, and `fromDataTypeValue` receives one; its `value` is the JSON the contract stores. The data type has already read that JSON with its `read` function under the column's parameters, so `fromDataTypeValue` does not check it again. A codec builds the value it hands over with `this.dataTypeValueOf(json)`, which calls the data type's `valueFrom` and so refuses JSON the type does not hold. To make that possible, the codec's constructor passes its data type and its parameters to `CodecImpl`:
 
@@ -1058,32 +1062,32 @@ A Mongo codec made with `mongoCodec()` from `@prisma/orm-family-mongo/codec` tak
 
 ```ts
 // before
-import { Long } from 'bson';
-import { mongoCodec } from '@prisma/orm-family-mongo/codec';
-import { decodeJsonString } from '@prisma/orm-framework/components/codec';
-import type { JsonValue } from '@prisma/orm-framework/contract/types';
+import { Long } from "bson";
+import { mongoCodec } from "@prisma/orm-family-mongo/codec";
+import { decodeJsonString } from "@prisma/orm-framework/components/codec";
+import type { JsonValue } from "@prisma/orm-framework/contract/types";
 
 export const moneyCodec = mongoCodec({
-  typeId: 'acme/money@1',
+  typeId: "acme/money@1",
   encode: (value: bigint) => Long.fromBigInt(value),
   decode: (wire: Long) => wire.toBigInt(),
   encodeJson: (value: bigint) => value.toString(),
-  decodeJson: (json: JsonValue) => BigInt(decodeJsonString('acme/money@1', json)),
+  decodeJson: (json: JsonValue) => BigInt(decodeJsonString("acme/money@1", json)),
 });
 
 // after
-import { Long } from 'bson';
-import { mongoCodec } from '@prisma/orm-family-mongo/codec';
-import { mongoDataType } from '@prisma/orm-family-mongo/contract/data-type';
-import { type DataTypeValue, readJsonMatching } from '@prisma/orm-framework/components/codec';
+import { Long } from "bson";
+import { mongoCodec } from "@prisma/orm-family-mongo/codec";
+import { mongoDataType } from "@prisma/orm-family-mongo/contract/data-type";
+import { type DataTypeValue, readJsonMatching } from "@prisma/orm-framework/components/codec";
 
-export const acmeMoney = mongoDataType('acme/money', {
-  bsonTypes: ['long'],
-  read: (json) => readJsonMatching('acme/money', json, /^-?\d+$/, 'decimal integer text'),
+export const acmeMoney = mongoDataType("acme/money", {
+  bsonTypes: ["long"],
+  read: (json) => readJsonMatching("acme/money", json, /^-?\d+$/, "decimal integer text"),
 });
 
 export const moneyCodec = mongoCodec({
-  typeId: 'acme/money@1',
+  typeId: "acme/money@1",
   dataType: acmeMoney,
   toWire: (value: bigint) => Long.fromBigInt(value),
   fromWire: (wire: Long) => wire.toBigInt(),
@@ -1098,28 +1102,28 @@ A data type now reads every value a contract stores, with a `read` function that
 
 ```ts
 // before
-export const pgvectorVector = sqlDataType('pgvector/vector', {
+export const pgvectorVector = sqlDataType("pgvector/vector", {
   params: pgvectorVectorParams,
-  texts: [{ text: 'vector({length})', written: true, catalog: true }],
+  texts: [{ text: "vector({length})", written: true, catalog: true }],
   toCanonicalForm: vectorCanonicalForm,
 });
 
 // after
 const readVector: DataTypeReader = (json, params) => {
-  const length = typeof params['length'] === 'number' ? params['length'] : undefined;
+  const length = typeof params["length"] === "number" ? params["length"] : undefined;
   const expected =
-    length === undefined ? 'an array of finite numbers' : `an array of ${length} finite numbers`;
+    length === undefined ? "an array of finite numbers" : `an array of ${length} finite numbers`;
   if (!Array.isArray(json) || (length !== undefined && json.length !== length)) {
-    return refuseJsonValue('pgvector/vector', expected, json);
+    return refuseJsonValue("pgvector/vector", expected, json);
   }
-  if (!json.every(isFiniteNumber)) return refuseJsonValue('pgvector/vector', expected, json);
+  if (!json.every(isFiniteNumber)) return refuseJsonValue("pgvector/vector", expected, json);
   return json;
 };
 
-export const pgvectorVector = sqlDataType('pgvector/vector', {
+export const pgvectorVector = sqlDataType("pgvector/vector", {
   params: pgvectorVectorParams,
   read: readVector,
-  texts: [{ text: 'vector({length})', written: true, catalog: true }],
+  texts: [{ text: "vector({length})", written: true, catalog: true }],
 });
 ```
 
@@ -1127,17 +1131,25 @@ A data type that had neither `toCanonicalForm` nor parameter checks gets a `read
 
 ```ts
 // before
-export const postgisGeometry = sqlDataType('postgis/geometry', { params, texts });
+export const postgisGeometry = sqlDataType("postgis/geometry", { params, texts });
 
 // after
 const readGeometry: DataTypeReader = (json, params) => {
-  const hex = readJsonMatching('postgis/geometry', json, HEX_TEXT, 'a HEXEWKB string');
-  const srid = params['srid'];
-  if (typeof srid !== 'number' || sridOf(hex) === srid) return json;
-  return refuseJsonValue('postgis/geometry', `a HEXEWKB string of a geometry with SRID ${srid}`, json);
+  const hex = readJsonMatching("postgis/geometry", json, HEX_TEXT, "a HEXEWKB string");
+  const srid = params["srid"];
+  if (typeof srid !== "number" || sridOf(hex) === srid) return json;
+  return refuseJsonValue(
+    "postgis/geometry",
+    `a HEXEWKB string of a geometry with SRID ${srid}`,
+    json,
+  );
 };
 
-export const postgisGeometry = sqlDataType('postgis/geometry', { params, texts, read: readGeometry });
+export const postgisGeometry = sqlDataType("postgis/geometry", {
+  params,
+  texts,
+  read: readGeometry,
+});
 ```
 
 A parameter that limits values, such as a geometry column's SRID, is checked the same way, in the data type's `read`. A contract that stores a value the type refuses no longer loads, so a stored default that broke the limit is reported when the contract is read, not when a query runs.
@@ -1146,15 +1158,15 @@ A parameter that limits values, such as a geometry column's SRID, is checked the
 
 The helpers that read a value from JSON now say so, and the one that writes a float says what it returns. Rename each call:
 
-| Before | After |
-| --- | --- |
-| `decodeJsonString` | `readJsonString` |
-| `decodeJsonMatching` | `readJsonMatching` |
-| `decodeJsonInteger` | `readJsonInteger` |
+| Before                  | After                 |
+| ----------------------- | --------------------- |
+| `decodeJsonString`      | `readJsonString`      |
+| `decodeJsonMatching`    | `readJsonMatching`    |
+| `decodeJsonInteger`     | `readJsonInteger`     |
 | `decodeJsonIntegerText` | `readJsonIntegerText` |
-| `decodeJsonFloat` | `readJsonFloat` |
-| `decodeJsonBoolean` | `readJsonBoolean` |
-| `encodeJsonFloat` | `floatToJson` |
+| `decodeJsonFloat`       | `readJsonFloat`       |
+| `decodeJsonBoolean`     | `readJsonBoolean`     |
+| `encodeJsonFloat`       | `floatToJson`         |
 
 They take the same arguments. `ToCanonicalForm` and `canonicalFormOf` are removed; a data type's `read` (`data-types-own-parameter-limits`) does their work.
 
@@ -1162,13 +1174,13 @@ They take the same arguments. `ToCanonicalForm` and `canonicalFormOf` are remove
 
 The text a contract stores for a value is its stored form, and the helpers that read or write it now say so. They are exported from `@prisma/orm-family-sql/contract/data-type-support` and `@prisma/orm-family-sql/contract/sql-expression` as before. Rename each use:
 
-| Before | After |
-| --- | --- |
-| `canonicalDateTime` | `dateTimeStoredText` |
+| Before                     | After                       |
+| -------------------------- | --------------------------- |
+| `canonicalDateTime`        | `dateTimeStoredText`        |
 | `CanonicalDateTimeOptions` | `DateTimeStoredTextOptions` |
-| `canonicalNumeralText` | `storedNumeralText` |
-| `sqlTextFromCanonical` | `sqlTextFromStored` |
-| `canonicalSqlText` | `storedSqlText` |
+| `canonicalNumeralText`     | `storedNumeralText`         |
+| `sqlTextFromCanonical`     | `sqlTextFromStored`         |
+| `canonicalSqlText`         | `storedSqlText`             |
 
 They take the same arguments and return the same values.
 
@@ -1212,7 +1224,7 @@ A family codec template names no data type, so it cannot build a codec: the code
 
 ```ts
 // before
-import { postgresCodec } from '@prisma/orm-postgres/target/codec-descriptor';
+import { postgresCodec } from "@prisma/orm-postgres/target/codec-descriptor";
 
 export const myCharDescriptor = postgresCodec(myCharTemplate, {
   dataType: pgChar,
@@ -1225,7 +1237,7 @@ export const myTextDescriptor = postgresCodec(myTextTemplate, {
 });
 
 // after
-import { postgresCodec } from '@prisma/orm-postgres/target/codec-descriptor';
+import { postgresCodec } from "@prisma/orm-postgres/target/codec-descriptor";
 
 export const myCharDescriptor = postgresCodec(myCharTemplate, {
   dataType: pgChar,
@@ -1298,11 +1310,11 @@ The pair of a codec lookup and a data type lookup has one type in the framework.
 
 ```ts
 // Before
-import type { SqlTypeLookups } from '@prisma/orm-family-sql/contract/data-type';
+import type { SqlTypeLookups } from "@prisma/orm-family-sql/contract/data-type";
 function storageTypeOf(codecId: string, lookups: SqlTypeLookups) {}
 
 // After
-import type { TypeLookups } from '@prisma/orm-framework/components/codec';
+import type { TypeLookups } from "@prisma/orm-framework/components/codec";
 function storageTypeOf(codecId: string, lookups: TypeLookups) {}
 ```
 
@@ -1317,12 +1329,22 @@ function storageTypeOf(codecId: string, lookups: TypeLookups) {}
 ```ts
 // Before
 const { nativeType, many, resolvedNativeType } = introspectedNativeType({
-  formattedType, dataType: row.data_type, udtName, characterMaximumLength, numericPrecision, numericScale,
+  formattedType,
+  dataType: row.data_type,
+  udtName,
+  characterMaximumLength,
+  numericPrecision,
+  numericScale,
 });
 
 // After
 const { typeText, many } = introspectedTypeText({
-  formattedType, informationSchemaType: row.data_type, udtName, characterMaximumLength, numericPrecision, numericScale,
+  formattedType,
+  informationSchemaType: row.data_type,
+  udtName,
+  characterMaximumLength,
+  numericPrecision,
+  numericScale,
 });
 ```
 
@@ -1332,14 +1354,14 @@ On the database side, `typeText` is the type as introspection reads it, such as 
 
 ```ts
 // Before
-new SqlColumnIR({ name: 'id', nativeType: 'int4', nullable: false, resolvedNativeType: 'int4' });
+new SqlColumnIR({ name: "id", nativeType: "int4", nullable: false, resolvedNativeType: "int4" });
 
 // After
-import { pgInt4 } from '@prisma/orm-postgres/target/data-types';
+import { pgInt4 } from "@prisma/orm-postgres/target/data-types";
 
 new SqlColumnIR({
-  name: 'id',
-  typeText: 'int4',
+  name: "id",
+  typeText: "int4",
   nullable: false,
   storedType: pgInt4,
   storedTypeParams: {},
@@ -1356,20 +1378,20 @@ A resolver reads the column's `many` or `typeText` instead of a type name, and r
 
 ```ts
 // Before
-import type { DefaultResolver } from '@prisma/orm-family-sql/family/control';
-import { parsePostgresDefault } from '@prisma/orm-postgres/target/default-normalizer';
+import type { DefaultResolver } from "@prisma/orm-family-sql/family/control";
+import { parsePostgresDefault } from "@prisma/orm-postgres/target/default-normalizer";
 
 const resolve: DefaultResolver = (def, resolvedNativeType) =>
-  def.kind === 'function' ? (parsePostgresDefault(def.expression, resolvedNativeType) ?? def) : def;
+  def.kind === "function" ? (parsePostgresDefault(def.expression, resolvedNativeType) ?? def) : def;
 
 // After
-import type { DefaultResolver } from '@prisma/orm-family-sql/family/control';
-import { readPostgresDefault } from '@prisma/orm-postgres/target/default-normalizer';
+import type { DefaultResolver } from "@prisma/orm-family-sql/family/control";
+import { readPostgresDefault } from "@prisma/orm-postgres/target/default-normalizer";
 
 const resolve: DefaultResolver = (def, column) => {
-  if (def.kind !== 'function') return def;
+  if (def.kind !== "function") return def;
   const read = readPostgresDefault(def.expression, column.many);
-  return read.kind === 'function' ? read : def;
+  return read.kind === "function" ? read : def;
 };
 ```
 
@@ -1381,7 +1403,7 @@ A control adapter that implements `SqlControlAdapter` deletes its `normalizeDefa
 
 ```ts
 // Before
-import { PostgresControlAdapter } from '@prisma/orm-postgres/adapter/control';
+import { PostgresControlAdapter } from "@prisma/orm-postgres/adapter/control";
 
 const adapter = new PostgresControlAdapter(
   createPostgresBuiltinCodecLookup(),
@@ -1389,8 +1411,8 @@ const adapter = new PostgresControlAdapter(
 );
 
 // After
-import { PostgresControlAdapter } from '@prisma/orm-postgres/adapter/control';
-import { postgresDataTypes } from '@prisma/orm-postgres/target/data-types';
+import { PostgresControlAdapter } from "@prisma/orm-postgres/adapter/control";
+import { postgresDataTypes } from "@prisma/orm-postgres/target/data-types";
 
 const adapter = new PostgresControlAdapter(
   createPostgresBuiltinCodecLookup(),
@@ -1401,13 +1423,13 @@ const adapter = new PostgresControlAdapter(
 
 ```ts
 // Before
-import { SqliteControlAdapter } from '@prisma/orm-sqlite/adapter/control';
+import { SqliteControlAdapter } from "@prisma/orm-sqlite/adapter/control";
 
 const adapter = new SqliteControlAdapter(createSqliteBuiltinCodecLookup());
 
 // After
-import { SqliteControlAdapter } from '@prisma/orm-sqlite/adapter/control';
-import { sqliteDataTypes } from '@prisma/orm-sqlite/target/data-types';
+import { SqliteControlAdapter } from "@prisma/orm-sqlite/adapter/control";
+import { sqliteDataTypes } from "@prisma/orm-sqlite/target/data-types";
 
 const adapter = new SqliteControlAdapter(createSqliteBuiltinCodecLookup(), sqliteDataTypes);
 ```
@@ -1475,7 +1497,7 @@ A target or extension that registers a data type its arguments take declares the
 export const myTargetPack: typeof myTargetPackBase & {
   readonly __codecTypes?: CodecTypes;
   readonly __dataTypeArguments?: {
-    readonly 'my/int': { readonly argument: number; readonly parameter: number };
+    readonly "my/int": { readonly argument: number; readonly parameter: number };
   };
 } = myTargetPackBase;
 ```
@@ -1510,7 +1532,14 @@ Rename the call and pass the type constructors and field presets as `helpers`:
 
 ```ts
 // Before
-enforceDataTypeInvariants({ lookup, declaredTypes, codecs, authoringEntries, constructors, codecDescriptorFor });
+enforceDataTypeInvariants({
+  lookup,
+  declaredTypes,
+  codecs,
+  authoringEntries,
+  constructors,
+  codecDescriptorFor,
+});
 
 // After
 enforceHelperCodecInvariants({ lookup, helpers, codecDescriptorFor });
@@ -1529,19 +1558,19 @@ A default function whose `lower` returned `{ kind: 'execution', generated }` no 
 ```ts
 // Before
 const slugidEntry: ControlMutationDefaultEntry = {
-  signature: { documentation: 'Generates a slug identifier when a field value is omitted.' },
+  signature: { documentation: "Generates a slug identifier when a field value is omitted." },
   lower: () => ({
     ok: true,
-    value: { kind: 'execution', generated: { kind: 'generator', id: 'slugid' } },
+    value: { kind: "execution", generated: { kind: "generator", id: "slugid" } },
   }),
-  usageSignatures: ['slugid()'],
+  usageSignatures: ["slugid()"],
 };
 
 const slugidPack = {
   // ...
   controlMutationDefaults: {
-    defaultFunctionRegistry: new Map([['slugid', slugidEntry]]),
-    generatorDescriptors: [{ id: 'slugid', applicableCodecIds: ['pg/text@1'] }],
+    defaultFunctionRegistry: new Map([["slugid", slugidEntry]]),
+    generatorDescriptors: [{ id: "slugid", applicableCodecIds: ["pg/text@1"] }],
   },
 };
 
@@ -1549,22 +1578,22 @@ const slugidPack = {
 import {
   type ExtensionPackRef,
   singleGeneratorBinding,
-} from '@prisma/orm-framework/components/components';
+} from "@prisma/orm-framework/components/components";
 
 const slugidPack = {
   // ...
   controlMutationDefaults: {
     defaultFunctionRegistry: new Map(),
-    generatorDescriptors: [{ id: 'slugid' }],
+    generatorDescriptors: [{ id: "slugid" }],
   },
   generatorFunctions: [
     {
-      name: 'slugid',
-      signature: { documentation: 'Generates a slug identifier when a field value is omitted.' },
-      bindings: [singleGeneratorBinding({ codecIds: ['pg/text@1'], generatorId: 'slugid' })],
+      name: "slugid",
+      signature: { documentation: "Generates a slug identifier when a field value is omitted." },
+      bindings: [singleGeneratorBinding({ codecIds: ["pg/text@1"], generatorId: "slugid" })],
     },
   ],
-} as const satisfies ExtensionPackRef<'sql', 'postgres'>;
+} as const satisfies ExtensionPackRef<"sql", "postgres">;
 ```
 
 Put `generatorFunctions` and the generator descriptors on both the pack ref, which the TypeScript builder reads, and the control descriptor, which `contract emit`, `contract print` and the language server read. Every stack, the TypeScript builders included, checks that each binding produces a generator a descriptor registers. Declare the pack ref with `as const satisfies`, not a type annotation: the `gen` of a `defineContract` callback is built from the packs' declared functions and their signatures, so `gen.slugid()` exists only when the pack ref keeps its literal type. A binding's `resolve` may return only a generator id the binding lists in `generatorIds`; any other id throws `InternalError`. To bind a function another component declares, such as `uuid`, to a codec your extension adds, contribute a binding without a `signature`. Composing a stack fails with `CONTRACT.PACK_CONTRIBUTION_INVALID` when two components declare one function, when a binding names a function no component declares, when two bindings cover one function and codec, when two functions write one generator for one codec, when a binding produces a generator no generator descriptor registers, or when two components register one generator id.
@@ -1608,7 +1637,7 @@ const arms = [...defaultFunctionRegistry.entries()].map(([name, entry]) =>
 );
 
 // After
-import { defaultFunctionCall } from '@prisma/orm-family-sql/contract-psl/attribute-specs';
+import { defaultFunctionCall } from "@prisma/orm-family-sql/contract-psl/attribute-specs";
 
 const arms = [...defaultFunctionRegistry.entries()].map(([name, entry]) =>
   defaultFunctionCall(name, entry, dataTypes),
@@ -1622,7 +1651,7 @@ A generator function, new in this release (`default-functions-lower-to-database-
 Code that calls the registry passes the column's length:
 
 ```ts
-import { sqlCodecColumnLength } from '@prisma/orm-family-sql/contract/data-type';
+import { sqlCodecColumnLength } from "@prisma/orm-family-sql/contract/data-type";
 
 generatorFunctions.resolve(call, {
   codecId,
@@ -1635,13 +1664,16 @@ A binding of your own reads the length:
 
 ```ts
 const binding: GeneratorFunctionBinding = {
-  codecIds: ['pg/text@1', 'sql/char@1'],
-  generatorIds: ['slugid'],
+  codecIds: ["pg/text@1", "sql/char@1"],
+  generatorIds: ["slugid"],
   resolve: ({ field }) =>
     field.length !== undefined && field.length < 22
-      ? { ok: false, message: `slugid() writes 22 characters, which does not fit a column of ${field.length} characters.` }
-      : { ok: true, generator: { kind: 'generator', id: 'slugid' } },
-  printArguments: () => ({ args: {}, text: '' }),
+      ? {
+          ok: false,
+          message: `slugid() writes 22 characters, which does not fit a column of ${field.length} characters.`,
+        }
+      : { ok: true, generator: { kind: "generator", id: "slugid" } },
+  printArguments: () => ({ args: {}, text: "" }),
 };
 ```
 
@@ -1666,7 +1698,7 @@ const definition = buildContractDefinition({
 
 ```ts
 // Before
-interpretArgs(args, { name: 'rel', positional, named }, ctx, span, node);
+interpretArgs(args, { name: "rel", positional, named }, ctx, span, node);
 
 // After
 interpretArgs(args, { label: 'Attribute "rel"', positional, named }, ctx, span, node);
@@ -1701,11 +1733,25 @@ Code written against 8.0.0-rc.18 never had `fieldTypesExpression`, so there is n
 ```ts
 type FieldTypeOverrides = {
   readonly public: {
-    readonly models: { readonly User: { readonly role: { readonly output: 'admin' | 'user'; readonly input: 'admin' | 'user' } } };
-    readonly valueObjects: { readonly Address: { readonly kind: { readonly output: 'home' | 'work'; readonly input: 'home' | 'work' } } };
+    readonly models: {
+      readonly User: {
+        readonly role: { readonly output: "admin" | "user"; readonly input: "admin" | "user" };
+      };
+    };
+    readonly valueObjects: {
+      readonly Address: {
+        readonly kind: { readonly output: "home" | "work"; readonly input: "home" | "work" };
+      };
+    };
   };
 };
-export type FieldOutputTypes = FieldTypesFromDomain<ContractBase['domain']['namespaces'], CodecTypes, ParameterizedOutputTypeFunctions, FieldTypeOverrides, 'output'>;
+export type FieldOutputTypes = FieldTypesFromDomain<
+  ContractBase["domain"]["namespaces"],
+  CodecTypes,
+  ParameterizedOutputTypeFunctions,
+  FieldTypeOverrides,
+  "output"
+>;
 ```
 
 ### `field-types-generic-moved`
@@ -1723,10 +1769,10 @@ A third-party SQL pack is typed fully for a `defineContract` contract only when 
 **Query operations: `__queryOperationTypes`.** If your pack contributes query operations and exports a `QueryOperationTypes<CodecTypes>` type for its emitted `contract.d.ts`, declare it as a type-level function of the contract's codec types and add it to the pack metadata's type:
 
 ```ts
-import type { QueryOperationTypesFunction } from '@prisma/orm-family-sql/contract/types';
+import type { QueryOperationTypesFunction } from "@prisma/orm-family-sql/contract/types";
 
 export interface QueryOperationTypesForCodecs extends QueryOperationTypesFunction {
-  readonly queryOperationTypes: QueryOperationTypes<this['codecTypes']>;
+  readonly queryOperationTypes: QueryOperationTypes<this["codecTypes"]>;
 }
 
 export const myPackMeta: typeof myPackMetaBase & {
@@ -1740,9 +1786,9 @@ export const myPackMeta: typeof myPackMetaBase & {
 ```ts
 export const myAggregateDescriptors = [
   {
-    operation: 'bitOr',
-    input: { kind: 'codec', codecId: 'pg/int4@1' },
-    output: { kind: 'codec', codecId: 'pg/int8@1' },
+    operation: "bitOr",
+    input: { kind: "codec", codecId: "pg/int4@1" },
+    output: { kind: "codec", codecId: "pg/int8@1" },
     nullable: true,
   },
 ] as const;
@@ -1759,16 +1805,16 @@ If you build descriptors with helper functions, make the helpers generic with `c
 This covers `parameterized-output-types-declared-once` (SQL packs) and `mongo-parameterized-output-types` (Mongo-family packs). If a codec's output type depends only on the column's type parameters, such as `Vector<3>` for `vector(3)`, write that mapping once, as a type-level function of the type parameters, and export it from your pack's `codec-types` entry:
 
 ```ts
-import type { ParameterizedOutputTypesFunction } from '@prisma/orm-framework/contract/types';
+import type { ParameterizedOutputTypesFunction } from "@prisma/orm-framework/contract/types";
 
 type OutputTypeMap<TypeParams> = {
-  readonly 'my/vector@1': TypeParams extends { readonly length: infer N extends number }
+  readonly "my/vector@1": TypeParams extends { readonly length: infer N extends number }
     ? Vector<N>
     : never;
 };
 
 export interface ParameterizedOutputTypesForTypeParams extends ParameterizedOutputTypesFunction {
-  readonly outputTypes: OutputTypeMap<this['typeParams']>;
+  readonly outputTypes: OutputTypeMap<this["typeParams"]>;
 }
 ```
 
@@ -1818,10 +1864,10 @@ Export `CodecTypes`, `ParameterizedOutputTypesForTypeParams` and the types they 
 ```ts
 // before
 const keys = Object.keys(model.fields);
-const hasId = Object.hasOwn(model.fields, '_id');
+const hasId = Object.hasOwn(model.fields, "_id");
 
 // after
-import { ownDocumentIdFieldOf, ownStoredNamesOf } from '@internal/mongo-contract';
+import { ownDocumentIdFieldOf, ownStoredNamesOf } from "@internal/mongo-contract";
 
 const keys = Object.values(ownStoredNamesOf(model));
 const hasId = ownDocumentIdFieldOf(model) !== undefined;
@@ -1847,10 +1893,10 @@ const hasId = ownDocumentIdFieldOf(model) !== undefined;
 
 ```ts
 // before
-import type { FieldValueSets } from '@internal/mongo-contract-psl';
+import type { FieldValueSets } from "@internal/mongo-contract-psl";
 
 // after
-import type { FieldValueSets } from '@internal/mongo-contract';
+import type { FieldValueSets } from "@internal/mongo-contract";
 ```
 
 Through the public package, import from `@prisma/orm-family-mongo/contract` instead of `@prisma/orm-family-mongo/contract-psl`.
@@ -1861,17 +1907,17 @@ Through the public package, import from `@prisma/orm-family-mongo/contract` inst
 
 ```ts
 // before
-import { deriveJsonSchema } from '@internal/mongo-contract-psl';
+import { deriveJsonSchema } from "@internal/mongo-contract-psl";
 
 const validator = deriveJsonSchema(
-  ns.models['Account'].fields,
+  ns.models["Account"].fields,
   { codecLookup, dataTypeLookup },
   ns.valueObjects,
   valueSets,
 );
 
 // after
-import { collectionControlPoliciesOf, deriveCollectionValidators } from '@internal/mongo-contract';
+import { collectionControlPoliciesOf, deriveCollectionValidators } from "@internal/mongo-contract";
 
 const validator = deriveCollectionValidators({
   models: ns.models,
@@ -1879,7 +1925,7 @@ const validator = deriveCollectionValidators({
   valueObjects: ns.valueObjects ?? {},
   valueSets,
   controlPolicies: collectionControlPoliciesOf(contract),
-})['accounts'];
+})["accounts"];
 ```
 
 `ns` is `contract.domain.namespaces[namespaceId]`, and `valueSets` is the storage namespace's `entries.valueSet`, as before. `controlPolicies` is required: only a collection whose control policy is `managed` gets a validator, as in an emitted contract. `collectionControlPoliciesOf(contract)` reads the policies a built contract declares. A call to `derivePolymorphicJsonSchema` becomes the same call: the validator of a root model with variants already has one `oneOf` branch per variant.
@@ -2046,9 +2092,18 @@ A MongoDB contract now records each field's stored name in `model.storage.fields
 
 ```typescript
 // before
-this.setDefault({ schema: 'public', table: 'user', column: col('role', 'text', { default: lit('member'), codecRef: { codecId: 'pg/text@1' } }), operationClass: 'widening' })
+this.setDefault({
+  schema: "public",
+  table: "user",
+  column: col("role", "text", { default: lit("member"), codecRef: { codecId: "pg/text@1" } }),
+  operationClass: "widening",
+});
 // after
-this.setDefault({ schema: 'public', table: 'user', column: col('role', 'text', { default: lit('member'), codecRef: { codecId: 'pg/text@1' } }) })
+this.setDefault({
+  schema: "public",
+  table: "user",
+  column: col("role", "text", { default: lit("member"), codecRef: { codecId: "pg/text@1" } }),
+});
 ```
 
 `node migration.ts` does not check types, so a file that still passes `operationClass` runs and ignores it. An applied migration needs nothing: `prisma db migrate` applies `ops.json`.
@@ -2129,13 +2184,13 @@ A `recreateTable` written for an `autoincrement()` change has no text to detect;
 
 ```ts
 // Before
-await control.dbUpdate({ contract, mode: 'apply', migrationsDir: 'migrations', answerQuestions });
+await control.dbUpdate({ contract, mode: "apply", migrationsDir: "migrations", answerQuestions });
 
 // After
 await control.dbUpdate({
   contract,
-  mode: 'apply',
-  migrationsDir: 'migrations',
+  mode: "apply",
+  migrationsDir: "migrations",
   answerQuestions,
   invocation: { cwd: process.cwd(), configPath: undefined, dbGiven: false },
 });
@@ -2147,13 +2202,13 @@ A failure of these three operations is a `CliStructuredError`, so `DbInitFailure
 
 The failure's fields change too:
 
-| Before | After |
-| --- | --- |
-| `failure.summary` | `failure.message` |
-| `failure.code === 'PLANNING_FAILED'`, `failure.conflicts` | `failure.code === 'MIGRATION.PLANNING_FAILED'`, `failure.meta.conflicts` |
-| `failure.warnings` on a failed `dbInit` or `dbUpdate`, and `value.warnings` on a successful one | the `onPlannerWarnings(warnings)` option, called once per run when planning raised warnings, whether the apply then succeeds or fails |
-| `failure.rowsWithoutValue`, `failure.failedTypeChange` | the runner's facts in `failure.meta`: `rowsWithoutValue` and `failedTypeChange`, and `schemaIssues` and `failedCheck` when the runner found them. A field in them is a subject object, not text such as `"User.age"` |
-| `failure.failedMigration`, `failure.databaseStorageHash` | removed; the advice in `failure.fix` names the migration directory and the `--from` hash |
+| Before                                                                                          | After                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `failure.summary`                                                                               | `failure.message`                                                                                                                                                                                                    |
+| `failure.code === 'PLANNING_FAILED'`, `failure.conflicts`                                       | `failure.code === 'MIGRATION.PLANNING_FAILED'`, `failure.meta.conflicts`                                                                                                                                             |
+| `failure.warnings` on a failed `dbInit` or `dbUpdate`, and `value.warnings` on a successful one | the `onPlannerWarnings(warnings)` option, called once per run when planning raised warnings, whether the apply then succeeds or fails                                                                                |
+| `failure.rowsWithoutValue`, `failure.failedTypeChange`                                          | the runner's facts in `failure.meta`: `rowsWithoutValue` and `failedTypeChange`, and `schemaIssues` and `failedCheck` when the runner found them. A field in them is a subject object, not text such as `"User.age"` |
+| `failure.failedMigration`, `failure.databaseStorageHash`                                        | removed; the advice in `failure.fix` names the migration directory and the `--from` hash                                                                                                                             |
 
 In `--json` output, `db init` and `db update` print the planner's warnings of a failed apply as `warn` messages before the error, instead of in the error's `meta.plannerWarnings`.
 
@@ -2163,12 +2218,15 @@ In `--json` output, `db init` and `db update` print the planner's warnings of a 
 
 ```ts
 // Before
-if (error.code === 'MIGRATION.RUNNER_FAILED' && error.meta.runnerErrorCode === 'MIGRATION.SCHEMA_VERIFY_FAILED') {
+if (
+  error.code === "MIGRATION.RUNNER_FAILED" &&
+  error.meta.runnerErrorCode === "MIGRATION.SCHEMA_VERIFY_FAILED"
+) {
   report(error.meta.issues);
 }
 
 // After
-if (error.code === 'MIGRATION.SCHEMA_VERIFY_FAILED') {
+if (error.code === "MIGRATION.SCHEMA_VERIFY_FAILED") {
   report(error.meta.schemaIssues);
 }
 ```
@@ -2177,10 +2235,10 @@ A check that matched `MIGRATION.RUNNER_FAILED` alone, meaning "the apply failed"
 
 Read the facts from these `meta` keys:
 
-| Before | After |
-| --- | --- |
-| `meta.issues` | `meta.schemaIssues` |
+| Before                                                                     | After                                                                                    |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `meta.issues`                                                              | `meta.schemaIssues`                                                                      |
 | `meta.operationId`, `meta.phase`, `meta.stepDescription` of a failed check | `meta.failedCheck.operationId`, `meta.failedCheck.phase`, `meta.failedCheck.description` |
-| `meta.runnerErrorCode` | `code` |
+| `meta.runnerErrorCode`                                                     | `code`                                                                                   |
 
 `meta.failingSpace` is unchanged. `MIGRATION.PATH_UNREACHABLE` for a database with no marker now has `'empty'`, the empty contract's hash, in `meta.fromHash`, where it had `'<empty>'`. A failure also carries `meta.failedTypeChange` and `meta.rowsWithoutValue` when the runner found them.

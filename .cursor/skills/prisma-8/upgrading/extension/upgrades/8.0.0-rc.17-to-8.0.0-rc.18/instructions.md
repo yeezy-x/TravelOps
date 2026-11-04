@@ -98,7 +98,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts}"
       matches:
-        - 'sql-default-literal'
+        - "sql-default-literal"
         - '\bsql\x60[^\x60]*\x60\s*\.(kind|expression)\b'
         - ':\s*ColumnDefault\s*=\s*sql\x60'
         - 'import\s*(type\s*)?\{[^}]*\bsql\b[^}]*\}\s*from\s*[''"]@internal/sql-contract-ts/contract-builder[''"]'
@@ -386,7 +386,7 @@ A block spec can now read the stack's data types, so a block parameter can recei
 function policyUsingParam(ctx: BlockSpecContext) {
   return {
     type: optional(dataTypeValue(SQL_EXPRESSION_DATA_TYPE_ID, ctx.dataTypes)),
-    documentation: 'A SQL predicate controlling which rows this policy permits.',
+    documentation: "A SQL predicate controlling which rows this policy permits.",
   };
 }
 ```
@@ -427,19 +427,19 @@ The same entry exports `printedTaggedLiteralReadsBack(text)`, which says whether
 
 Every field of the TypeScript contract builder that holds raw SQL takes a `sql` value, as `.default()` already did. Wrap each string in the `sql` tag, imported from the same contract-builder module as the other helpers:
 
-| Place | Before | After |
-| --- | --- | --- |
-| `index` `where` | `constraints.index([cols.email], { where: '(archived_at IS NULL)', name: 'users_email_active' })` | ``constraints.index([cols.email], { where: sql`(archived_at IS NULL)`, name: 'users_email_active' })`` |
-| `index` `expression` | `constraints.index({ expression: 'lower(email)', name: 'users_email_lower' })` | ``constraints.index({ expression: sql`lower(email)`, name: 'users_email_lower' })`` |
-| `fullTextIndex` `where` | `fullTextIndex(cols.text, { where: 'archived_at IS NULL', name: 'message_text_search_live' })` | ``fullTextIndex(cols.text, { where: sql`archived_at IS NULL`, name: 'message_text_search_live' })`` |
-| `check` `expression` | `check({ expression: 'total > 0', name: 'order_total_positive' })` | ``check({ expression: sql`total > 0`, name: 'order_total_positive' })`` |
+| Place                              | Before                                                                                                                | After                                                                                                                      |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `index` `where`                    | `constraints.index([cols.email], { where: '(archived_at IS NULL)', name: 'users_email_active' })`                     | ``constraints.index([cols.email], { where: sql`(archived_at IS NULL)`, name: 'users_email_active' })``                     |
+| `index` `expression`               | `constraints.index({ expression: 'lower(email)', name: 'users_email_lower' })`                                        | ``constraints.index({ expression: sql`lower(email)`, name: 'users_email_lower' })``                                        |
+| `fullTextIndex` `where`            | `fullTextIndex(cols.text, { where: 'archived_at IS NULL', name: 'message_text_search_live' })`                        | ``fullTextIndex(cols.text, { where: sql`archived_at IS NULL`, name: 'message_text_search_live' })``                        |
+| `check` `expression`               | `check({ expression: 'total > 0', name: 'order_total_positive' })`                                                    | ``check({ expression: sql`total > 0`, name: 'order_total_positive' })``                                                    |
 | a policy's `using` and `withCheck` | `policySelect(Profile, { name: 'profile_owner_read', roles: [authenticated], using: '"userId"::uuid = auth.uid()' })` | ``policySelect(Profile, { name: 'profile_owner_read', roles: [authenticated], using: sql`"userId"::uuid = auth.uid()` })`` |
 
 ```ts
-import { check, policySelect, sql } from '@internal/postgres/contract-builder';
+import { check, policySelect, sql } from "@internal/postgres/contract-builder";
 ```
 
-Copy the string's value, not its source: undo the TypeScript string's own escaping first, so `'"userId"'` and `"\"userId\""` both become `` sql`"userId"` ``. Inside the template, write each backtick as `` \` ``, each `${` as `\${`, and a backslash that precedes a backtick, a dollar sign or another backslash as `\\`; every other backslash is kept as written, so `E'\n'` stays `E'\n'`. An index or check object written by hand in `.sql({ indexes, checks })` takes a `sql` value in the same fields. A shared predicate held in a `const` becomes a `sql` value too: `` const owner = sql`"userId"::uuid = auth.uid()`; ``.
+Copy the string's value, not its source: undo the TypeScript string's own escaping first, so `'"userId"'` and `"\"userId\""` both become `` sql`"userId"` ``. Inside the template, write each backtick as `` \` ``, each `${` as `\${`, and a backslash that precedes a backtick, a dollar sign or another backslash as `\\`; every other backslash is kept as written, so `E'\n'` stays `E'\n'`. An index or check object written by hand in `.sql({ indexes, checks })` takes a `sql` value in the same fields. A shared predicate held in a `const` becomes a `sql` value too: ``const owner = sql`"userId"::uuid = auth.uid()`;``.
 
 Skip files under a `migrations/` folder and leave them as they are: migration functions take a string or a `sql` value, and a string keeps its exact text, while wrapping it in `sql` canonicalizes it, which can change the SQL that migration runs.
 
@@ -488,7 +488,7 @@ The definition tree (`IndexNode`, `CheckNode`), `buildSqlContractFromDefinition`
 
 `sql` is defined in `@internal/sql-contract/sql-expression`, with `SqlExpression`, `isSqlExpression`, `readSqlExpression` and `requireSqlExpression`. Read a value through `readSqlExpression` or `requireSqlExpression`, not by checking `isSqlExpression` and reading `.text`: a value made by another installed copy of the package passes `isSqlExpression`, and only those two functions canonicalize its text. `@internal/sql-contract-ts/contract-builder` re-exports `sql` and `type SqlExpression`; `packages/2-sql/2-authoring/contract-ts/src/sql-default-literal.ts` is deleted, so import from one of those modules. A contract-builder facade that re-exports `sql` also re-exports `type SqlExpression` beside it, and never the class as a value.
 
-The tag returns a `SqlExpression`, whose `text` is the canonical text. Code that read `` sql`...`.expression `` or typed the result as `ColumnDefault` reads `.text`, or passes the value to `.default()`, which stores `{ kind: 'function', expression: value.text }`. `describeTaggedLiteralFailure` and `resolveTemplateTagEscapes` are also exported from `@internal/framework-components/authoring`.
+The tag returns a `SqlExpression`, whose `text` is the canonical text. Code that read ``sql`...`.expression`` or typed the result as `ColumnDefault` reads `.text`, or passes the value to `.default()`, which stores `{ kind: 'function', expression: value.text }`. `describeTaggedLiteralFailure` and `resolveTemplateTagEscapes` are also exported from `@internal/framework-components/authoring`.
 
 This supersedes the sentence of the `sql-default-literal` extension instructions in the upgrade from 8.0.0-rc.11 to 8.0.0-rc.12 that says `` sql`now()` `` and `` sql`autoincrement()` `` are refused by the TypeScript `sql` tag: `.default()` refuses them now.
 
@@ -545,14 +545,14 @@ These changes concern code that imports from `@prisma/orm-family-sql/orm-client`
 
 ```ts
 // before
-import { emptyState } from '@prisma/orm-family-sql/orm-client';
+import { emptyState } from "@prisma/orm-family-sql/orm-client";
 
 const state = { ...emptyState(), limit: 10 };
 
 // after
-import { createCollectionTables, emptyState } from '@prisma/orm-family-sql/orm-client';
+import { createCollectionTables, emptyState } from "@prisma/orm-family-sql/orm-client";
 
-const tables = createCollectionTables(contract, 'public', 'User');
+const tables = createCollectionTables(contract, "public", "User");
 const state = { ...emptyState(tables), limit: 10 };
 ```
 
@@ -580,11 +580,13 @@ Build the filter through the collection, which binds it when `where()` is called
 // before
 const state = {
   ...emptyState(),
-  filters: [BinaryExpr.eq(ColumnRef.of('users', 'email'), LiteralExpr.of(email))],
+  filters: [BinaryExpr.eq(ColumnRef.of("users", "email"), LiteralExpr.of(email))],
 };
 
 // after
-const state = users.where(BinaryExpr.eq(ColumnRef.of('users', 'email'), LiteralExpr.of(email))).state;
+const state = users.where(
+  BinaryExpr.eq(ColumnRef.of("users", "email"), LiteralExpr.of(email)),
+).state;
 ```
 
 A filter that must be written by hand needs a `ParamRef` with the column's codec in place of the literal. A literal left in place is not encoded by the column's codec.
@@ -595,17 +597,22 @@ Pass the tables as the fourth argument. A variant moves to the fifth, named by i
 
 ```ts
 // before
-createModelAccessor(context, 'public', 'User');
-createModelAccessor(context, 'public', 'Task', 'Feature');
+createModelAccessor(context, "public", "User");
+createModelAccessor(context, "public", "Task", "Feature");
 
 // after
-createModelAccessor(context, 'public', 'User', createCollectionTables(context.contract, 'public', 'User'));
 createModelAccessor(
   context,
-  'public',
-  'Task',
-  createCollectionTables(context.contract, 'public', 'Task'),
-  'feature',
+  "public",
+  "User",
+  createCollectionTables(context.contract, "public", "User"),
+);
+createModelAccessor(
+  context,
+  "public",
+  "Task",
+  createCollectionTables(context.contract, "public", "Task"),
+  "feature",
 );
 ```
 
@@ -619,20 +626,23 @@ There is no public function that aliases a junction table on its own. Replace th
 
 ```ts
 // before
-const include: IncludeExpr = { relationName: 'tags', through: { table: 'user_tags', /* … */ }, /* … */ };
+const include: IncludeExpr = {
+  relationName: "tags",
+  through: { table: "user_tags" /* … */ } /* … */,
+};
 
 // after
-const [include] = users.include('tags').state.includes;
+const [include] = users.include("tags").state.includes;
 ```
 
 `IncludeExpr` no longer has `localTableName`. Remove the property where the relation's local columns are on the parent model's own table, which is every relation of a non-polymorphic model, a base model or a single-table-inheritance variant. Where they are on a multi-table-inheritance variant's table, set `localVariantValue` to that variant's discriminator value:
 
 ```ts
 // before
-const include: IncludeExpr = { relationName: 'assignee', localTableName: 'features', /* … */ };
+const include: IncludeExpr = { relationName: "assignee", localTableName: "features" /* … */ };
 
 // after
-const include: IncludeExpr = { relationName: 'assignee', localVariantValue: 'feature', /* … */ };
+const include: IncludeExpr = { relationName: "assignee", localVariantValue: "feature" /* … */ };
 ```
 
 ## A variant is named by its discriminator value
@@ -663,11 +673,11 @@ Rename the properties, and where a value is written or compared, use the discrim
 
 ```ts
 // before
-const narrowed = { ...state, variantName: 'Feature' };
+const narrowed = { ...state, variantName: "Feature" };
 
 // after, for @@base(Task, "feature")
-const narrowed = { ...state, variantValue: 'feature' };
-const featureTable = state.tables.variants.get('feature');
+const narrowed = { ...state, variantValue: "feature" };
+const featureTable = state.tables.variants.get("feature");
 ```
 
 A type that reads the selected variant from a collection's type state reads `variantValue`, for example `CollectionTypeStateOf<C>['variantValue']`.
@@ -678,14 +688,14 @@ These types are exported from `@prisma/orm-family-mongo/orm`. Pass the discrimin
 
 ```ts
 // before
-type BugRow = VariantModelRow<Contract, 'Task', 'Bug'>;
-type BugInput = VariantCreateInput<Contract, 'Task', 'Bug'>;
-type Bugs = MongoCollection<Contract, 'Task', NoIncludes, 'Bug'>;
+type BugRow = VariantModelRow<Contract, "Task", "Bug">;
+type BugInput = VariantCreateInput<Contract, "Task", "Bug">;
+type Bugs = MongoCollection<Contract, "Task", NoIncludes, "Bug">;
 
 // after, for a Bug variant declaring "bug"
-type BugRow = VariantModelRow<Contract, 'Task', 'bug'>;
-type BugInput = VariantCreateInput<Contract, 'Task', 'bug'>;
-type Bugs = MongoCollection<Contract, 'Task', NoIncludes, 'bug'>;
+type BugRow = VariantModelRow<Contract, "Task", "bug">;
+type BugInput = VariantCreateInput<Contract, "Task", "bug">;
+type Bugs = MongoCollection<Contract, "Task", NoIncludes, "bug">;
 ```
 
 `VariantNameForValue<C, M, V>` mapped a value to a model name for these helpers; pass the value itself. Replace `VariantNames<C, M>` with `DiscriminatorValues<C, M>` where the code lists what `variant()` accepts.
@@ -789,7 +799,7 @@ What to write instead:
 
   ```ts
   if (maybeHandle === null) {
-    throw new Error('an account needs a handle to be connected');
+    throw new Error("an account needs a handle to be connected");
   }
   await db.orm.Owner.where({ id }).update({
     accounts: (accounts) => accounts.connect({ handle: maybeHandle }),
@@ -841,14 +851,14 @@ The runtime now runs every statement and every transaction as an **activity**. A
 
 ### Rename the hooks
 
-| Before | After |
-|---|---|
-| `beforeQuery`, `beforeExecute` | `beforeEncode` |
+| Before                               | After                                      |
+| ------------------------------------ | ------------------------------------------ |
+| `beforeQuery`, `beforeExecute`       | `beforeEncode`                             |
 | `interceptQuery`, `interceptExecute` | `intercept.onQuery`, `intercept.onExecute` |
-| `onRow` | `onRow` |
-| `afterQuery`, `afterExecute` | `activityEnded` on a statement |
-| `afterTransaction` | `activityFinalized` on a statement |
-| `beforeCompile` | `beforeCompile` |
+| `onRow`                              | `onRow`                                    |
+| `afterQuery`, `afterExecute`         | `activityEnded` on a statement             |
+| `afterTransaction`                   | `activityFinalized` on a statement         |
+| `beforeCompile`                      | `beforeCompile`                            |
 
 `beforeEncode` keeps the arguments of `beforeQuery` and `beforeExecute`: the lowered plan, the context and the parameter mutator. It runs for both `query()` and `execute()`. A middleware that defined both `beforeQuery` and `beforeExecute` with the same body defines `beforeEncode` once. A middleware that must tell them apart reads `activity.returns` (`'rows'` or `'stats'`) in `activityStarted` and keeps it in `ctx.state`.
 
@@ -974,9 +984,9 @@ Delete `renameStatements` from a target's `migrations` capability, and any `keep
 The DDL command alphabet gains a collection rename:
 
 ```ts
-import { RenameCollectionCommand } from '@prisma/orm-family-mongo/query-ast/control';
+import { RenameCollectionCommand } from "@prisma/orm-family-mongo/query-ast/control";
 
-new RenameCollectionCommand('profiles', 'users');
+new RenameCollectionCommand("profiles", "users");
 ```
 
 A `MongoDdlCommandVisitor<R>` implementation adds `renameCollection(command)`. A Mongo driver's `run(wireCommand)` handles `kind: 'renameCollection'`, as the shipped driver does with `db.renameCollection(collection, to)`, without `dropTarget`. An adapter's DDL lowering maps the command to `new RenameCollectionWireCommand(command.collection, command.to)`.

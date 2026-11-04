@@ -201,7 +201,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
-        - 'Cannot (?:define|apply) (?:the|a) scope|Pass the scope to with|Run the scope with apply|A scope (?:passed to with|applied with apply)|The scope was (?:made|declared)|the scope could not read the model|declaration in the scope'
+        - "Cannot (?:define|apply) (?:the|a) scope|Pass the scope to with|Run the scope with apply|A scope (?:passed to with|applied with apply)|The scope was (?:made|declared)|the scope could not read the model|declaration in the scope"
   - id: collection-state-carries-locking
     summary: "CollectionState in @internal/sql-orm-client has a new required key, locking; a state literal built without spreading emptyState() must add it, carrying an existing state's value."
     detection:
@@ -233,9 +233,9 @@ An enum compares a value with its members, so an enum cannot use a codec whose v
 
 ```ts
 class GeoHashDescriptor extends CodecDescriptorImpl<void> {
-  override readonly traits = ['equality'] as const;
+  override readonly traits = ["equality"] as const;
   override readonly enumRefusal =
-    'The database normalises a geohash to its shortest form, so a member as written is not the value a query reads back. Use a text enum.';
+    "The database normalises a geohash to its shortest form, so a member as written is not the value a query reads back. Use a text enum.";
 }
 ```
 
@@ -286,10 +286,7 @@ const orm = mongoOrm<TContract>({
 Give the facade's `defineContract` an `Enums` type parameter on both overloads, pass it to `buildBoundContract` through the definition type, and merge the scaffold's and the factory's enums in the factory overload:
 
 ```ts
-import type {
-  EnumTypeHandle,
-  MergeEnums,
-} from '@internal/sql-contract-ts/contract-builder';
+import type { EnumTypeHandle, MergeEnums } from "@internal/sql-contract-ts/contract-builder";
 
 type EnumsConstraint = Record<string, EnumTypeHandle>;
 
@@ -310,14 +307,16 @@ type Result<Types, Models, Extensions, Enums extends EnumsConstraint> = ReturnTy
 export function defineContract<
   const Types extends TypesConstraint = Record<never, never>,
   const Models extends ModelsConstraint = Record<never, never>,
-  const Extensions extends Record<string, ExtensionPackRef<'sql', string>> | undefined = undefined,
+  const Extensions extends Record<string, ExtensionPackRef<"sql", string>> | undefined = undefined,
   const Enums extends EnumsConstraint = Record<never, never>,
->(definition: Definition<Types, Models, Extensions, Enums>): Result<Types, Models, Extensions, Enums>;
+>(
+  definition: Definition<Types, Models, Extensions, Enums>,
+): Result<Types, Models, Extensions, Enums>;
 
 export function defineContract<
   const Types extends TypesConstraint = Record<never, never>,
   const Models extends ModelsConstraint = Record<never, never>,
-  const Extensions extends Record<string, ExtensionPackRef<'sql', string>> | undefined = undefined,
+  const Extensions extends Record<string, ExtensionPackRef<"sql", string>> | undefined = undefined,
   const ScaffoldEnums extends EnumsConstraint = Record<never, never>,
   const FactoryEnums extends EnumsConstraint = Record<never, never>,
 >(
@@ -336,7 +335,7 @@ Add `'enums'` to the keys the base scaffold omits from `ContractInput`, add `rea
 import {
   bindEnumType,
   type ExtractCodecTypesFromPack,
-} from '@internal/sql-contract-ts/contract-builder';
+} from "@internal/sql-contract-ts/contract-builder";
 
 /** `enumType` bound to the pack's codec types, so each `member()` value is checked against the enum codec's input type. */
 export const enumType = bindEnumType<ExtractCodecTypesFromPack<typeof targetPack>>();
@@ -464,10 +463,10 @@ In code and documentation that call the control client's `dbUpdate({ ... })` wit
 ```typescript
 await control.dbUpdate({
   contract,
-  mode: 'apply',
-  migrationsDir: 'migrations',
+  mode: "apply",
+  migrationsDir: "migrations",
   answerQuestions: async (questions) => {
-    if (questions.length > 0) throw new Error('db update would lose data or widen access');
+    if (questions.length > 0) throw new Error("db update would lose data or widen access");
     return [];
   },
 });

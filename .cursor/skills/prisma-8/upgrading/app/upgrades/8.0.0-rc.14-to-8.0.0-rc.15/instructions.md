@@ -239,7 +239,7 @@ changes:
     detection:
       glob: "**/*.prisma"
       matches:
-        - 'Contract inferred from the live database schema'
+        - "Contract inferred from the live database schema"
   - id: text-timestamp-now-is-utc
     summary: |
       A `timestamp` column of type `TimestampString(p)` that the ORM fills with `now` now receives the UTC wall-clock time on a host outside UTC. Before, it received the host's local time. No code changes.
@@ -503,12 +503,16 @@ In `contract.ts` and every other file that builds a column descriptor by hand, d
 
 ```ts
 // before
-const pgText = { codecId: 'pg/text@1', nativeType: 'text' } as const;
-const Priority = enumType('Priority', { codecId: 'pg/int4@1', nativeType: 'int4' }, member('Low', 0));
+const pgText = { codecId: "pg/text@1", nativeType: "text" } as const;
+const Priority = enumType(
+  "Priority",
+  { codecId: "pg/int4@1", nativeType: "int4" },
+  member("Low", 0),
+);
 
 // after
-const pgText = { codecId: 'pg/text@1' } as const;
-const Priority = enumType('Priority', { codecId: 'pg/int4@1' }, member('Low', 0));
+const pgText = { codecId: "pg/text@1" } as const;
+const Priority = enumType("Priority", { codecId: "pg/int4@1" }, member("Low", 0));
 ```
 
 Code that reads a column of a stored contract (`contract.storage…tables[name].columns[name]`) reads `dataType`, the data type id such as `pg/text`, instead of `nativeType`, the database type name such as `text`:
@@ -537,15 +541,15 @@ A type written by hand for such a contract changes the same way: `readonly nativ
 
 Update tests that assert query text or SQL snapshots:
 
-| Before | After |
-| --- | --- |
-| `$1::integer` | `$1::int4` |
-| `$1::smallint` | `$1::int2` |
-| `$1::bigint` | `$1::int8` |
-| `$1::real` | `$1::float4` |
+| Before                 | After        |
+| ---------------------- | ------------ |
+| `$1::integer`          | `$1::int4`   |
+| `$1::smallint`         | `$1::int2`   |
+| `$1::bigint`           | `$1::int8`   |
+| `$1::real`             | `$1::float4` |
 | `$1::double precision` | `$1::float8` |
-| `$1::boolean` | `$1::bool` |
-| `$1::integer[]` | `$1::int4[]` |
+| `$1::boolean`          | `$1::bool`   |
+| `$1::integer[]`        | `$1::int4[]` |
 
 Extension types keep their names (`$1::vector`, `$1::geometry`).
 
@@ -554,15 +558,12 @@ Extension types keep their names (`$1::vector`, `$1::geometry`).
 A column's stored database type name is now written from the data type of the column's codec, so the contract build needs the pack that provides the codec. Add every extension whose codec the contract uses:
 
 ```ts
-import pgvector from '@prisma/orm-extension-pgvector/pack';
-import { defineContract } from '@prisma/orm-postgres/contract-builder';
+import pgvector from "@prisma/orm-extension-pgvector/pack";
+import { defineContract } from "@prisma/orm-postgres/contract-builder";
 
-export const contract = defineContract(
-  { extensions: { pgvector } },
-  ({ field, model }) => ({
-    // …
-  }),
-);
+export const contract = defineContract({ extensions: { pgvector } }, ({ field, model }) => ({
+  // …
+}));
 ```
 
 A contract that already lists the extension changes nothing. `contract.json` does not change.
@@ -584,10 +585,14 @@ The error now comes from `defineContract`, not from the helper call. Code that c
 
 ```ts
 // before
-if (error.code === 'CONTRACT.ARGUMENT_INVALID') { /* … */ }
+if (error.code === "CONTRACT.ARGUMENT_INVALID") {
+  /* … */
+}
 
 // after
-if (error.code === 'CONTRACT.TYPE_PARAMS_INVALID') { /* … */ }
+if (error.code === "CONTRACT.TYPE_PARAMS_INVALID") {
+  /* … */
+}
 ```
 
 The error's `meta` is `{ dataType, parameters, modelName, fieldName }`, for example `{ dataType: 'postgis/geometry', parameters: ['srid'], modelName: 'Place', fieldName: 'location' }`, in place of `helperPath`, `expected` and `received`. A contract that passes `srid: 0` now fails when it is built; PostgreSQL refuses an SRID below 1, so such a column never migrated. Use a real SRID such as `4326`, or `geometryColumn` for a column with no SRID.
@@ -628,12 +633,12 @@ For disposable example or test databases whose migration fixtures are regenerate
 
 Run `prisma contract emit`. `contract.json` and `contract.d.ts` gain these entries in the domain half:
 
-| PSL | Added to the field's domain entry |
-| --- | --- |
-| `code Short`, with `types { Short = VarChar(10) }` (also `Short[]`) | `"typeParams": { "length": 10 }` on `type` |
-| `roles Role[]`, where `Role` is an `enum` | `"valueSet": { "plane": "domain", "entityKind": "enum", "namespaceId": "public", "entityName": "Role" }`, as `role Role` already had |
-| composite type member `amount Numeric(10, 2)` (also a list, or a named type) | `"typeParams": { "precision": 10, "scale": 2 }` on `type` |
-| composite type member `role Role` or `roles Role[]` | the same `valueSet` as a model field of that enum |
+| PSL                                                                          | Added to the field's domain entry                                                                                                    |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `code Short`, with `types { Short = VarChar(10) }` (also `Short[]`)          | `"typeParams": { "length": 10 }` on `type`                                                                                           |
+| `roles Role[]`, where `Role` is an `enum`                                    | `"valueSet": { "plane": "domain", "entityKind": "enum", "namespaceId": "public", "entityName": "Role" }`, as `role Role` already had |
+| composite type member `amount Numeric(10, 2)` (also a list, or a named type) | `"typeParams": { "precision": 10, "scale": 2 }` on `type`                                                                            |
+| composite type member `role Role` or `roles Role[]`                          | the same `valueSet` as a model field of that enum                                                                                    |
 
 A named type without parameters, such as `Email = String`, adds nothing.
 
@@ -647,7 +652,7 @@ Migration snapshots under `migrations/snapshots/<hash>/` need no change. Migrati
 
 A literal default on a field typed by a composite type used to be stored whatever its shape. It is now checked, naming the path that is wrong, as in `Field "User.home.street"`:
 
-- A single value object takes a JSON object, and a list of them a JSON array: `` homes Address[] @default(json`{"street": "x"}`) `` is refused; write `@default([])` or `` @default(json`[{"street": "x"}]`) ``. JSON `null` is taken when the field is optional. `PSL_VALUE_TYPE_INCOMPATIBLE`.
+- A single value object takes a JSON object, and a list of them a JSON array: ``homes Address[] @default(json`{"street": "x"}`)`` is refused; write `@default([])` or ``@default(json`[{"street": "x"}]`)``. JSON `null` is taken when the field is optional. `PSL_VALUE_TYPE_INCOMPATIBLE`.
 - A key that is not a member is refused, and so is a missing member that is not optional, and `null` for a member that is not optional. `PSL_VALUE_TYPE_INCOMPATIBLE`.
 - The default holds each member in the form its codec stores, so the member's codec must read the value. A `Decimal`, `Numeric(p, s)` or `BigInt` member takes a decimal string, `"1.5"`, and a number is refused; a `String` member takes a JSON string, so `"street": 1` is refused; a `DateTime` member takes a date and time string; a `Json` member takes any JSON value. `PSL_INVALID_DEFAULT_LITERAL`, with the codec's message.
 - A member typed by an enum takes only the enum's values: `PSL_INVALID_DEFAULT_LITERAL`, `Expected one of:` the values.
@@ -657,7 +662,7 @@ Correct the value the diagnostic names.
 
 ## `composite-type-attributes-refused`
 
-An attribute inside a `type` block was ignored: `street String @default("x")` stored no default, and `@@map` mapped nothing. Each is now refused, `PSL_UNSUPPORTED_FIELD_ATTRIBUTE` on a member and `PSL_UNSUPPORTED_COMPOSITE_TYPE_ATTRIBUTE` on the type. Remove the attribute. To give a value object a default, write it on the model field as a whole value, such as `` home Address @default(json`{"street": "x"}`) ``.
+An attribute inside a `type` block was ignored: `street String @default("x")` stored no default, and `@@map` mapped nothing. Each is now refused, `PSL_UNSUPPORTED_FIELD_ATTRIBUTE` on a member and `PSL_UNSUPPORTED_COMPOSITE_TYPE_ATTRIBUTE` on the type. Remove the attribute. To give a value object a default, write it on the model field as a whole value, such as ``home Address @default(json`{"street": "x"}`)``.
 
 ## `codecs-check-stored-json`
 
@@ -677,17 +682,17 @@ The PSL reader reads each literal default, and each member of a SQL `enum`, with
 
 Such a default used to load, and the migration planned and applied; the first insert that used the default then failed. A `Char` or bit column without a length, which did not apply on PostgreSQL whatever its default, now applies as `character(1)` or `bit(1)`. SQLite does not enforce a declared length, so on SQLite the char and varchar codecs take text of any length. Each of these is now refused at `contract emit`:
 
-| Schema | Diagnostic |
-| --- | --- |
-| `enum P { @@type("pg/int4@1") Low = "low" }` | `PSL_EXTENSION_INVALID_VALUE`: `enum "P" member "Low" was rejected by codec "pg/int4@1": pg/int4@1 JSON value must be an integer from -2147483648 to 2147483647` |
-| the same enum with a bare `Low` | `PSL_ENUM_BARE_MEMBER_NON_STRING_CODEC`: `enum "P" member "Low" has no value and codec "pg/int4@1" does not accept a bare name as input` |
-| `enum P { @@type("pg/text@1") Low = 1 }` | `PSL_EXTENSION_INVALID_VALUE`, `enum "P" member "Low": pg/text has no cast from pg/int2; it casts from nothing` |
-| an enum without `@@type` whose integer members include one outside -2147483648 to 2147483647, such as `Low = 3000000000` | `PSL_EXTENSION_INVALID_VALUE`, `enum "P" member "Low": pg/int4 has no cast from pg/int8; it casts from pg/int2` |
-| `u Uuid @default("nope")` | `PSL_INVALID_LITERAL`, `"nope" is not a UUID: PostgreSQL reads 32 hexadecimal digits, with a hyphen after any group of four and optionally in braces.` |
-| `s VarChar(3) @default("toolong")` | `PSL_INVALID_DEFAULT_LITERAL`, `sql/varchar@1 JSON value must be a string of at most 3 characters` |
-| `c Char @default("abc")` on PostgreSQL | `PSL_INVALID_DEFAULT_LITERAL`, `sql/char@1 JSON value must be a string of at most 1 character before any trailing spaces` |
-| `enum P { @@type("sql/int@1") Low = 3000000000 }` on PostgreSQL | `PSL_EXTENSION_INVALID_VALUE`, `enum "P" member "Low": pg/int4 has no cast from pg/int8; it casts from pg/int2` |
-| `n Numeric(5, 2) @default(1.555)` | `PSL_INVALID_DEFAULT_LITERAL`, `pg/numeric@1 JSON value must be a decimal string that numeric(5, 2) stores without rounding` |
+| Schema                                                                                                                   | Diagnostic                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enum P { @@type("pg/int4@1") Low = "low" }`                                                                             | `PSL_EXTENSION_INVALID_VALUE`: `enum "P" member "Low" was rejected by codec "pg/int4@1": pg/int4@1 JSON value must be an integer from -2147483648 to 2147483647` |
+| the same enum with a bare `Low`                                                                                          | `PSL_ENUM_BARE_MEMBER_NON_STRING_CODEC`: `enum "P" member "Low" has no value and codec "pg/int4@1" does not accept a bare name as input`                         |
+| `enum P { @@type("pg/text@1") Low = 1 }`                                                                                 | `PSL_EXTENSION_INVALID_VALUE`, `enum "P" member "Low": pg/text has no cast from pg/int2; it casts from nothing`                                                  |
+| an enum without `@@type` whose integer members include one outside -2147483648 to 2147483647, such as `Low = 3000000000` | `PSL_EXTENSION_INVALID_VALUE`, `enum "P" member "Low": pg/int4 has no cast from pg/int8; it casts from pg/int2`                                                  |
+| `u Uuid @default("nope")`                                                                                                | `PSL_INVALID_LITERAL`, `"nope" is not a UUID: PostgreSQL reads 32 hexadecimal digits, with a hyphen after any group of four and optionally in braces.`           |
+| `s VarChar(3) @default("toolong")`                                                                                       | `PSL_INVALID_DEFAULT_LITERAL`, `sql/varchar@1 JSON value must be a string of at most 3 characters`                                                               |
+| `c Char @default("abc")` on PostgreSQL                                                                                   | `PSL_INVALID_DEFAULT_LITERAL`, `sql/char@1 JSON value must be a string of at most 1 character before any trailing spaces`                                        |
+| `enum P { @@type("sql/int@1") Low = 3000000000 }` on PostgreSQL                                                          | `PSL_EXTENSION_INVALID_VALUE`, `enum "P" member "Low": pg/int4 has no cast from pg/int8; it casts from pg/int2`                                                  |
+| `n Numeric(5, 2) @default(1.555)`                                                                                        | `PSL_INVALID_DEFAULT_LITERAL`, `pg/numeric@1 JSON value must be a decimal string that numeric(5, 2) stores without rounding`                                     |
 
 Give each enum member a value its codec takes, and each default a value its column's type holds unchanged. A `Uuid` default is still read in any form PostgreSQL reads; see `uuid-defaults-stored-as-postgresql-writes`.
 
@@ -769,22 +774,22 @@ The stored default does not change, so no migration follows.
 
 This matters only to code that reads PSL diagnostic codes, such as a test that asserts one. The messages did not change, except for a `sql` literal inside a list literal and the list of known tags, both described below the table.
 
-| Refusal | Old code | New code |
-| --- | --- | --- |
-| A tag no pack registered | `PSL_UNKNOWN_DEFAULT_LITERAL_TAG` | `PSL_UNKNOWN_LITERAL_TAG` |
-| A `json` literal whose text is not a JSON document | `PSL_INVALID_JSON_LITERAL` | `PSL_INVALID_LITERAL` |
-| Text an authoring entry or a cast refused | `PSL_INVALID_DEFAULT_LITERAL` | `PSL_INVALID_LITERAL` |
-| A value whose type the column's type has no cast from, including a list written on a column that holds one value | `PSL_DEFAULT_TYPE_INCOMPATIBLE` | `PSL_VALUE_TYPE_INCOMPATIBLE` |
-| A written form the target has no data type for | `PSL_DEFAULT_TYPE_INCOMPATIBLE` | `PSL_VALUE_TYPE_INCOMPATIBLE` |
-| A single value on a list column | `PSL_DEFAULT_TYPE_INCOMPATIBLE` | `PSL_DEFAULT_LIST_EXPECTED` |
-| A value the column's codec refused | `PSL_INVALID_DEFAULT_LITERAL` | unchanged |
-| A `sql` literal inside a list literal | `PSL_INVALID_DEFAULT_LITERAL`, at the element | `PSL_VALUE_TYPE_INCOMPATIBLE`, at the `@default` attribute |
+| Refusal                                                                                                          | Old code                                      | New code                                                   |
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| A tag no pack registered                                                                                         | `PSL_UNKNOWN_DEFAULT_LITERAL_TAG`             | `PSL_UNKNOWN_LITERAL_TAG`                                  |
+| A `json` literal whose text is not a JSON document                                                               | `PSL_INVALID_JSON_LITERAL`                    | `PSL_INVALID_LITERAL`                                      |
+| Text an authoring entry or a cast refused                                                                        | `PSL_INVALID_DEFAULT_LITERAL`                 | `PSL_INVALID_LITERAL`                                      |
+| A value whose type the column's type has no cast from, including a list written on a column that holds one value | `PSL_DEFAULT_TYPE_INCOMPATIBLE`               | `PSL_VALUE_TYPE_INCOMPATIBLE`                              |
+| A written form the target has no data type for                                                                   | `PSL_DEFAULT_TYPE_INCOMPATIBLE`               | `PSL_VALUE_TYPE_INCOMPATIBLE`                              |
+| A single value on a list column                                                                                  | `PSL_DEFAULT_TYPE_INCOMPATIBLE`               | `PSL_DEFAULT_LIST_EXPECTED`                                |
+| A value the column's codec refused                                                                               | `PSL_INVALID_DEFAULT_LITERAL`                 | unchanged                                                  |
+| A `sql` literal inside a list literal                                                                            | `PSL_INVALID_DEFAULT_LITERAL`, at the element | `PSL_VALUE_TYPE_INCOMPATIBLE`, at the `@default` attribute |
 
 `PSL_INVALID_JSON_LITERAL` no longer exists.
 
 The unknown-tag message lists the known tags in the order the stack registers them. The SQL family registers `sql` before the target registers `json`, so a Postgres or SQLite stack lists `sql, json`, where it used to list `json, sql, pg.sql` or `json, sql, sqlite.sql`. The completion list and the `Expected one of` message of `@default` offer `sql` before `json` for the same reason.
 
-A `sql` literal inside a list literal used to report `Literal tag "sql" produces a default of its own and cannot be an element of a list literal.` It is now refused by the cast rule, like any other value the column's type does not take: `Field "Post.tags" at element 1: pg/text has no cast from sql/expression; it casts from nothing`. Write the whole list as one `sql` literal instead, as in `` @default(sql`'{}'::text[]`) ``.
+A `sql` literal inside a list literal used to report `Literal tag "sql" produces a default of its own and cannot be an element of a list literal.` It is now refused by the cast rule, like any other value the column's type does not take: `Field "Post.tags" at element 1: pg/text has no cast from sql/expression; it casts from nothing`. Write the whole list as one `sql` literal instead, as in ``@default(sql`'{}'::text[]`)``.
 
 This supersedes the codes named in the `data-types-column-defaults` app instructions of the upgrade from 8.0.0-rc.11 to 8.0.0-rc.12: where they name `PSL_DEFAULT_TYPE_INCOMPATIBLE` for a value a column's type has no cast from, or `PSL_INVALID_JSON_LITERAL`, read the new codes above.
 
@@ -796,9 +801,12 @@ On PostgreSQL, `setDefault` takes the column and its default:
 
 ```typescript
 // before
-this.setDefault({ table: 'user', column: 'role', defaultSql: "DEFAULT 'member'" })
+this.setDefault({ table: "user", column: "role", defaultSql: "DEFAULT 'member'" });
 // after
-this.setDefault({ table: 'user', column: col('role', 'text', { default: lit('member'), codecRef: { codecId: 'pg/text@1' } }) })
+this.setDefault({
+  table: "user",
+  column: col("role", "text", { default: lit("member"), codecRef: { codecId: "pg/text@1" } }),
+});
 ```
 
 On SQLite, a column in `addColumn` or `recreateTable` carries the default and its codec, and a `recreateTable` postcheck that checks a default names the column:
@@ -844,18 +852,18 @@ For each project whose `prisma.config.ts` uses `prisma7Schema(...)`:
 
 1. Run `prisma contract emit`. The date and time fields change type:
 
-   | Prisma 7 field | Before | Now | Example value |
-   | --- | --- | --- | --- |
-   | `DateTime`, `DateTime @db.Timestamp(p)` | `Temporal.PlainDateTime` | `string` | `"2026-09-14 10:00:00.123"` (UTC, as Prisma 7 writes it) |
-   | `DateTime @db.Timestamptz(p)` | `Temporal.Instant` | `string` | `"2026-09-14 10:00:00.123+00"` (on a server whose `TimeZone` is UTC) |
-   | `DateTime @db.Date` | `Temporal.PlainDate` | `string` | `"2026-09-14"` |
-   | `DateTime @db.Time(p)` | `Temporal.PlainTime` | `string` | `"10:00:00.123"` |
+   | Prisma 7 field                          | Before                   | Now      | Example value                                                        |
+   | --------------------------------------- | ------------------------ | -------- | -------------------------------------------------------------------- |
+   | `DateTime`, `DateTime @db.Timestamp(p)` | `Temporal.PlainDateTime` | `string` | `"2026-09-14 10:00:00.123"` (UTC, as Prisma 7 writes it)             |
+   | `DateTime @db.Timestamptz(p)`           | `Temporal.Instant`       | `string` | `"2026-09-14 10:00:00.123+00"` (on a server whose `TimeZone` is UTC) |
+   | `DateTime @db.Date`                     | `Temporal.PlainDate`     | `string` | `"2026-09-14"`                                                       |
+   | `DateTime @db.Time(p)`                  | `Temporal.PlainTime`     | `string` | `"10:00:00.123"`                                                     |
 
    `@db.Timetz` fields already read as text and do not change.
 
 2. Change the code that reads or writes these fields:
 
-   - `DateTime` and `@db.Timestamp`: the text holds UTC wall-clock time with a space between the date and the time, where `.toString()` on a `Temporal.PlainDateTime` printed a `T`. Where code printed or stored that form, replace `value.toString()` with `value.replace(' ', 'T')`. Where it compares or computes with the value, `` new Date(`${value.replace(' ', 'T')}Z`) `` is the instant.
+   - `DateTime` and `@db.Timestamp`: the text holds UTC wall-clock time with a space between the date and the time, where `.toString()` on a `Temporal.PlainDateTime` printed a `T`. Where code printed or stored that form, replace `value.toString()` with `value.replace(' ', 'T')`. Where it compares or computes with the value, ``new Date(`${value.replace(' ', 'T')}Z`)`` is the instant.
    - `@db.Timestamptz`: the text carries the offset of the database session's `TimeZone`, `+00` on a server set to UTC. Do not apply `replace(' ', 'T')` to it. `new Date(value)` parses it in Node.js, and `new Date(value).toISOString()` prints the instant in UTC ending in `Z`, the form `.toString()` on a `Temporal.Instant` printed, with milliseconds always present.
    - `@db.Date` and `@db.Time`: the text is the form `.toString()` on a `Temporal.PlainDate` or `Temporal.PlainTime` printed.
 
@@ -883,9 +891,9 @@ Nothing changes until `prisma contract infer` runs again. A schema that keeps th
 
 When infer runs again, it writes each `bytea` default as the base64 the `Bytes` codec stores:
 
-| Before | Now |
-| --- | --- |
-| ``@default(sql`'\\x68656c6c6f'::bytea`)`` | `@default("aGVsbG8=")` |
+| Before                                           | Now                      |
+| ------------------------------------------------ | ------------------------ |
+| ``@default(sql`'\\x68656c6c6f'::bytea`)``        | `@default("aGVsbG8=")`   |
 | ``@default(sql`ARRAY['\\x68656c6c6f'::bytea]`)`` | `@default(["aGVsbG8="])` |
 
 1. Run `prisma contract emit`. The default is now stored as a value, so the storage hash changes. The default in the database does not change.
@@ -902,7 +910,7 @@ Prisma 6 stores a plain `Int` on MongoDB as a BSON long and presents it as a `nu
    - List the affected documents, to decide how to repair them. For a field on the model, this finds the fractional values:
 
      ```js
-     db.Post.find({ likes: { $type: 'double' }, $expr: { $ne: ['$likes', { $trunc: '$likes' }] } })
+     db.Post.find({ likes: { $type: "double" }, $expr: { $ne: ["$likes", { $trunc: "$likes" }] } });
      ```
 
      For a list or a composite value, this finds every document with a double in the field: `db.Post.find({ scores: { $type: 'double' } })` for an `Int[]` field, and `db.Post.find({ 'addresses.zip': { $type: 'double' } })` for `zip` in a composite type, whether `addresses` holds one value or a list.
@@ -910,53 +918,53 @@ Prisma 6 stores a plain `Int` on MongoDB as a BSON long and presents it as a `nu
    - Store every double in the field as a long. Choose `$round` or `$trunc`: `$round` rounds to the nearest whole number and a half to the even one (2.5 becomes 2, 3.5 becomes 4); `$trunc` drops the fraction (2.9 becomes 2). Whole-number doubles become longs either way.
 
      ```js
-     db.Post.updateMany({ likes: { $type: 'double' } }, [
-       { $set: { likes: { $toLong: { $round: ['$likes', 0] } } } },
-     ])
+     db.Post.updateMany({ likes: { $type: "double" } }, [
+       { $set: { likes: { $toLong: { $round: ["$likes", 0] } } } },
+     ]);
      ```
 
    - For an `Int[]` field, convert each double in the list:
 
      ```js
-     db.Post.updateMany({ scores: { $type: 'double' } }, [
+     db.Post.updateMany({ scores: { $type: "double" } }, [
        {
          $set: {
            scores: {
              $map: {
-               input: '$scores',
+               input: "$scores",
                in: {
                  $cond: [
-                   { $eq: [{ $type: '$$this' }, 'double'] },
-                   { $toLong: { $round: ['$$this', 0] } },
-                   '$$this',
+                   { $eq: [{ $type: "$$this" }, "double"] },
+                   { $toLong: { $round: ["$$this", 0] } },
+                   "$$this",
                  ],
                },
              },
            },
          },
        },
-     ])
+     ]);
      ```
 
    - For a field of a composite type the model holds once (`address Address?`), write its dotted path (`'address.zip'` and `'$address.zip'`) in the filter and the update above.
    - For a field of a composite type the model holds in a list (`addresses Address[]`), the dotted path fails with "$round only supports numeric types, not array". Rewrite each element of the list instead:
 
      ```js
-     db.Post.updateMany({ 'addresses.zip': { $type: 'double' } }, [
+     db.Post.updateMany({ "addresses.zip": { $type: "double" } }, [
        {
          $set: {
            addresses: {
              $map: {
-               input: '$addresses',
+               input: "$addresses",
                in: {
                  $mergeObjects: [
-                   '$$this',
+                   "$$this",
                    {
                      zip: {
                        $cond: [
-                         { $eq: [{ $type: '$$this.zip' }, 'double'] },
-                         { $toLong: { $round: ['$$this.zip', 0] } },
-                         '$$this.zip',
+                         { $eq: [{ $type: "$$this.zip" }, "double"] },
+                         { $toLong: { $round: ["$$this.zip", 0] } },
+                         "$$this.zip",
                        ],
                      },
                    },
@@ -966,10 +974,11 @@ Prisma 6 stores a plain `Int` on MongoDB as a BSON long and presents it as a `nu
            },
          },
        },
-     ])
+     ]);
      ```
 
    Here `Post`, `likes`, `scores`, `address`, `addresses` and `zip` stand for the collection and the field names in the database, after `@@map` and `@map`.
+
 2. Run `prisma contract emit`. In `contract.d.ts`, each plain `Int` field of the Prisma 6 schema is now typed with `mongo/int64Number@1` instead of `mongo/int32@1`; both read and write a `number`, so application code needs no change. `db sign` and `db verify` need nothing new: the contract carries no validators.
 
 ## `prisma6-bytes-objectid-is-hex`
@@ -1050,7 +1059,7 @@ Add the order the query needs:
 Where the query is meant to run without an order, cast the collection instead of the argument:
 
 ```ts
-import type { Ordered } from '@prisma/orm-postgres/orm-client';
+import type { Ordered } from "@prisma/orm-postgres/orm-client";
 
 const unordered = db.Post as Ordered<typeof db.Post>;
 await unordered.cursor({ id }).all();
@@ -1126,7 +1135,12 @@ A type of your own that sets a flag to `false` should set it to `boolean`. The w
 To keep a helper of your own, constrain its parameter, because both helpers require one:
 
 ```ts
-import type { CollectionRowOf, CollectionTypeStateOf, HasRow, HasTypeState } from '@prisma/orm-postgres/orm-client';
+import type {
+  CollectionRowOf,
+  CollectionTypeStateOf,
+  HasRow,
+  HasTypeState,
+} from "@prisma/orm-postgres/orm-client";
 
 type RowOf<C extends HasRow> = CollectionRowOf<C>;
 type StateOf<C extends HasTypeState> = CollectionTypeStateOf<C>;
@@ -1181,12 +1195,12 @@ For every `.variant(...)` call matched by `detection`, replace the variant's mod
 
 ```ts
 // before
-db.orm.public.Task.variant('Bug');
-db.orm.events.variant('ViewProductEvent');
+db.orm.public.Task.variant("Bug");
+db.orm.events.variant("ViewProductEvent");
 
 // after, for @@base(Task, "bug") and a ViewProductEvent variant declaring "view-product"
-db.orm.public.Task.variant('bug');
-db.orm.events.variant('view-product');
+db.orm.public.Task.variant("bug");
+db.orm.events.variant("view-product");
 ```
 
 Custom collection methods that call `this.variant('<ModelName>')`, and helpers or closures that call `.variant()`, change the same way. When the argument is a variable or a forwarded parameter, follow it back to where the model name is written and replace it there, including in type annotations that list variant model names. Update code comments and READMEs that show `.variant('<ModelName>')` too.
@@ -1199,13 +1213,13 @@ A second `.variant()` call on a variant collection is rejected. It no longer rep
 
 ```ts
 // before
-const bugs = db.orm.public.Task.variant('Bug');
-const features = bugs.variant('Feature');
+const bugs = db.orm.public.Task.variant("Bug");
+const features = bugs.variant("Feature");
 
 // after
 const tasks = db.orm.public.Task;
-const bugs = tasks.variant('bug');
-const features = tasks.variant('feature');
+const bugs = tasks.variant("bug");
+const features = tasks.variant("feature");
 ```
 
 ## `imported-postgres-field-checks-defaults`
@@ -1225,8 +1239,8 @@ The typed SQL builder gains four methods that lock the rows a select reads, name
 await db.transaction(async (tx) => {
   const [job] = await tx.query(
     tx.sql.public.job
-      .select('id')
-      .where((f, fns) => fns.eq(f.state, 'queued'))
+      .select("id")
+      .where((f, fns) => fns.eq(f.state, "queued"))
       .limit(1)
       .forUpdate({ skipLocked: true })
       .build(),
@@ -1262,7 +1276,7 @@ Before:
 ```ts
 export async function getUsersCached(limit = 10, ttlMs = 60_000) {
   const plan = db.sql.public.user
-    .select('id', 'email')
+    .select("id", "email")
     .annotate(cacheAnnotation({ ttl: ttlMs }))
     .limit(limit)
     .build();
@@ -1275,7 +1289,7 @@ After:
 ```ts
 export async function getUsersCached(limit = 10) {
   const plan = db.sql.public.user
-    .select('id', 'email')
+    .select("id", "email")
     .annotate(cacheAnnotation({}))
     .limit(limit)
     .build();
@@ -1319,7 +1333,7 @@ const store: CacheStore = {
     return raw ? (JSON.parse(raw) as CachedEntry) : undefined;
   },
   async set(key, entry, ttlMs) {
-    await redis.set(key, JSON.stringify(entry), 'PX', ttlMs);
+    await redis.set(key, JSON.stringify(entry), "PX", ttlMs);
   },
 };
 ```
@@ -1349,7 +1363,7 @@ const store: CacheStore<unknown, CachedRows> = {
   },
   async unset({ keys, meta }) {
     if (meta !== undefined) {
-      throw new Error('This store does not index meta');
+      throw new Error("This store does not index meta");
     }
     for (const key of keys ?? []) {
       await redis

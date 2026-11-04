@@ -89,7 +89,7 @@ changes:
     detection:
       glob: "**/migrations/*/refs/head.json"
       matches:
-        - '(?:pgvector:install-vector|postgis:install-postgis|paradedb:install-pg-search)-v1'
+        - "(?:pgvector:install-vector|postgis:install-postgis|paradedb:install-pg-search)-v1"
   - id: mongo-merged-redundant-indexes
     summary: |
       Every MongoDB contract source now merges identical and redundant indexes in a collection. Identical indexes, which TypeScript and PSL refused before (`CONTRACT.NAME_DUPLICATE`, `PSL_INVALID_INDEX`), become one index. So do two indexes that differ only in an option set to `false`, such as `{ unique: false }` beside the same index without it. A unique and a plain index on the same keys, such as `@unique` and `@@index` on one field, become one unique index. Before, a TypeScript or PSL contract held both indexes of such a pair, and the migration that created them failed. No source change is needed. Run `prisma contract emit`; a contract that held such a pair gets a new storage hash. Delete a migration planned earlier that creates both indexes, and plan it again.
@@ -128,7 +128,7 @@ changes:
         - '(?<![\w$.])createMongoCollection\s*(?:<[^>()]*>)?\s*\(\s*(?!\{)'
         - '(?<![\w$])mutationDefaults\s*:'
         - '(?<![\w$])MongoOrmEnums(?![\w$])'
-        - 'MUTATION_DEFAULTS_MISSING'
+        - "MUTATION_DEFAULTS_MISSING"
   - id: mongo-runtime-takes-adapter
     summary: |
       `createMongoRuntime()` takes `{ context, adapter, driver }`, as the SQL runtime does: create the adapter with `stack.adapter.create(stack)` and pass it beside the context. The runtime reads the target from `context.contract.target`, so build the context over the validated contract. `MongoExecutionContext` no longer has a `stack` member or a second type parameter, and its contract must be a MongoDB contract, as SQL's `ExecutionContext` requires a SQL contract: write `MongoExecutionContext<Contract>`, and build it with `createMongoExecutionContext({ contract, stack })` over a validated contract. `createMongoExecutionStack()` still takes an optional `driver`; given one, it returns `MongoExecutionStackWithDriver`, whose `driver` is always set, and without one it returns `MongoExecutionStack`, which has no `driver` member, as for SQL. `buildMongoEnums()` is removed: read the contract's enum accessors from `db.enums`, from `mongo({ contract })` or `mongoStatic({ contract })`. `MongoExecutionContext` has no `enums` member. The detection matches files that call `createMongoRuntime(`, read `.stack` from a context, give `MongoExecutionContext` two type arguments or a non-contract type argument, or name `buildMongoEnums` or `MongoEnumAccessors`.
@@ -147,7 +147,7 @@ changes:
       glob: "**/*.{ts,mts,cts,tsx,js,mjs,cjs}"
       matches:
         - 'DRIVER\.ALREADY_CONNECTED'
-        - '(?:Postgres|SQLite|MySQL|Mongo) client already connected'
+        - "(?:Postgres|SQLite|MySQL|Mongo) client already connected"
         - 'Call connect\(\) at most once per client'
   - id: contract-artifacts-restamp
     summary: |
@@ -172,7 +172,6 @@ Do the steps in this order, and skip a step that does not apply to the project:
 6. Bring each database up to date: run `prisma db migrate` for a pgvector, PostGIS or ParadeDB pack (`packs-declare-their-postgres-extension`); run `prisma db sign` for a project that reads a Prisma 7 schema (`prisma7-schema-reads-dates`); on MongoDB, replace a planned migration that creates two indexes now merged (`mongo-merged-redundant-indexes`); on PostgreSQL, plan and apply the value object checks (`postgres-value-object-checks`).
 7. Change the remaining application code: read a Prisma 7 `DateTime` field as a `Date` (`prisma7-schema-reads-dates`), drop handlers for a repeated `connect()` (`client-connect-safe-to-call-again`), and update value object and discriminator types (`value-object-types-from-storage`, `discriminator-typed-by-variant-values`).
 
-
 ## One version of Prisma ORM
 
 Commands and clients now refuse to start when Prisma ORM is loaded from more than one folder. Before, a project with mismatched versions could fail later with an internal error, for example on the first literal `@default` in `prisma contract emit`.
@@ -183,7 +182,6 @@ After upgrading, check that one copy is installed:
 2. The `prisma` CLI runs that version. `npm ls @prisma/orm-framework`, `pnpm why @prisma/orm-framework` or `bun why @prisma/orm-framework` lists every copy and the package that brought it.
 
 If more than one version is listed, align the versions and reinstall. If every copy is the same version, delete `node_modules` and the lockfile and reinstall. With pnpm, copies of one version can also differ by their peer dependencies: `pnpm why @prisma/orm-framework` shows the difference, and giving every dependent the same peer leaves one copy.
-
 
 ## Value objects are storage entities
 
@@ -228,12 +226,24 @@ Find the new hash in the script's output: the marker holds the `<old>` hash of o
 
 ```ts
 // before
-import type { ValueObjectTypesFromDomain } from '@prisma/orm-mongo/contract/types';
-type Outputs = ValueObjectTypesFromDomain<Contract['domain']['namespaces'], CodecTypes, never, {}, 'output'>;
+import type { ValueObjectTypesFromDomain } from "@prisma/orm-mongo/contract/types";
+type Outputs = ValueObjectTypesFromDomain<
+  Contract["domain"]["namespaces"],
+  CodecTypes,
+  never,
+  {},
+  "output"
+>;
 
 // after
-import type { ValueObjectTypesFromStorage } from '@prisma/orm-mongo/contract/types';
-type Outputs = ValueObjectTypesFromStorage<Contract['storage']['namespaces'], CodecTypes, never, {}, 'output'>;
+import type { ValueObjectTypesFromStorage } from "@prisma/orm-mongo/contract/types";
+type Outputs = ValueObjectTypesFromStorage<
+  Contract["storage"]["namespaces"],
+  CodecTypes,
+  never,
+  {},
+  "output"
+>;
 ```
 
 ### `postgres-value-object-checks`
@@ -260,20 +270,19 @@ Copy the expression from the preview between `CHECK (` and the closing `)`. Fix 
 expectTypeOf(task.type).toEqualTypeOf<string>();
 
 // after
-expectTypeOf(task.type).toEqualTypeOf<'bug' | 'feature'>();
+expectTypeOf(task.type).toEqualTypeOf<"bug" | "feature">();
 ```
-
 
 ## `DateTime`, `Date` and `Time` are convenience types on PostgreSQL
 
 On PostgreSQL, Prisma 8 has two layers of date and time types. The explicit types name the column type and the kind of value the application reads, such as `TimestamptzTemporal` or `DateString`. The convenience types `DateTime`, `Date`, `Time` and the new `Duration` are named for what a field means, and each becomes one explicit type, chosen by its optional `as` and `storage` arguments. Their defaults need no `Temporal` polyfill:
 
-| Written | Becomes | Column | The application reads |
-| --- | --- | --- | --- |
-| `DateTime` | `TimestamptzJsDate(3)` | `timestamptz(3)` | a JavaScript `Date` |
-| `Date` | `DateString` | `date` | a string, such as `"2024-02-29"` |
-| `Time` | `TimeString` | `time` | a string, such as `"09:30:00"` |
-| `Duration` | `IntervalString` | `interval` | an ISO 8601 duration, such as `"P1M"` |
+| Written    | Becomes                | Column           | The application reads                 |
+| ---------- | ---------------------- | ---------------- | ------------------------------------- |
+| `DateTime` | `TimestamptzJsDate(3)` | `timestamptz(3)` | a JavaScript `Date`                   |
+| `Date`     | `DateString`           | `date`           | a string, such as `"2024-02-29"`      |
+| `Time`     | `TimeString`           | `time`           | a string, such as `"09:30:00"`        |
+| `Duration` | `IntervalString`       | `interval`       | an ISO 8601 duration, such as `"P1M"` |
 
 Until this release, `DateTime`, `Date` and `Time` were explicit types that read `Temporal.Instant`, `Temporal.PlainDate` and `Temporal.PlainTime`. A schema that keeps those names now reads other values, and its contract changes.
 
@@ -281,11 +290,11 @@ Until this release, `DateTime`, `Date` and `Time` were explicit types that read 
 
 To keep each field as it is, rename its type, keeping its arguments and attributes:
 
-| Before | After |
-| --- | --- |
+| Before     | After                 |
+| ---------- | --------------------- |
 | `DateTime` | `TimestamptzTemporal` |
-| `Date` | `DateTemporal` |
-| `Time(p?)` | `TimeTemporal(p?)` |
+| `Date`     | `DateTemporal`        |
+| `Time(p?)` | `TimeTemporal(p?)`    |
 
 ```prisma
 model Event {
@@ -317,21 +326,20 @@ field.column(type.DateTemporal()); // was type.Date()
 field.column(type.TimeTemporal(3)); // was type.Time(3)
 ```
 
-
 ## The tools write the convenience date and time types
 
 ### `prisma7-schema-reads-dates`
 
 `prisma7Schema(...)` reads each Prisma 7 date and time field as the type the convenience default gives for its column:
 
-| Prisma 7 field | Prisma 8 type | The application reads |
-| --- | --- | --- |
-| `DateTime` | `TimestampJsDate(3)`, printed `DateTime(storage: timestamp)` | a JavaScript `Date`, the stored value read as UTC |
-| `@db.Timestamptz(p)` | `TimestamptzJsDate(p)`, printed `DateTime(precision: p)` | a JavaScript `Date` |
-| `@db.Timestamp(p)` | `TimestampJsDate(p)` | a JavaScript `Date`, the stored value read as UTC |
-| `@db.Date` | `DateString` | an ISO 8601 string, such as `2026-09-14`, the same text as before |
-| `@db.Time(p)` | `TimeString(p)` | an ISO 8601 string, such as `10:00:00.5`, the same text as before |
-| `@db.Timetz(p)` | `Timetz(p)` | an ISO 8601 string with a full offset, such as `10:00:00+02:00`, or `10:00:00Z` for UTC; it was `10:00:00+02` and `10:00:00+00` |
+| Prisma 7 field       | Prisma 8 type                                                | The application reads                                                                                                           |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `DateTime`           | `TimestampJsDate(3)`, printed `DateTime(storage: timestamp)` | a JavaScript `Date`, the stored value read as UTC                                                                               |
+| `@db.Timestamptz(p)` | `TimestamptzJsDate(p)`, printed `DateTime(precision: p)`     | a JavaScript `Date`                                                                                                             |
+| `@db.Timestamp(p)`   | `TimestampJsDate(p)`                                         | a JavaScript `Date`, the stored value read as UTC                                                                               |
+| `@db.Date`           | `DateString`                                                 | an ISO 8601 string, such as `2026-09-14`, the same text as before                                                               |
+| `@db.Time(p)`        | `TimeString(p)`                                              | an ISO 8601 string, such as `10:00:00.5`, the same text as before                                                               |
+| `@db.Timetz(p)`      | `Timetz(p)`                                                  | an ISO 8601 string with a full offset, such as `10:00:00+02:00`, or `10:00:00Z` for UTC; it was `10:00:00+02` and `10:00:00+00` |
 
 Before this release the first three read strings, such as `2026-09-14 10:00:00.123`. `@updatedAt` and `@default(now())` now write a `Date` for these fields. The three string types read ISO 8601 since 8.0.0-rc.21, whatever the contract source. The `iso-string-date-time-values` change in the 8.0.0-rc.20 → 8.0.0-rc.21 guide gives every form that changes, such as a date before year 1, and how to update code that reads them.
 
@@ -343,7 +351,7 @@ For each project whose `prisma.config.ts` uses `prisma7Schema(...)`:
 
    ```ts
    // before: user.updatedAt was "2026-09-14 10:00:00.123"
-   console.log(user.updatedAt.replace(' ', 'T'));
+   console.log(user.updatedAt.replace(" ", "T"));
    // after: user.updatedAt is a Date
    console.log(user.updatedAt.toISOString());
    ```
@@ -356,14 +364,14 @@ A `Date` cannot hold `infinity` or `-infinity` either. A row that stores one now
 
 `temporal.CreatedAt` is now `DateTime @onCreate(now())` and `temporal.UpdatedAt` is `DateTime @onCreate(now()) @onUpdate(now())`, a `timestamptz(3)` column read as a JavaScript `Date`. To keep each field exactly as it is, and its contract, write the type and the generators the alias stood for:
 
-| Before | After, in PSL |
-| --- | --- |
-| `temporal.CreatedAt` | `DateTime(as: temporal) @onCreate(now())` |
-| `temporal.UpdatedAt` | `DateTime(as: temporal) @onCreate(now()) @onUpdate(now())` |
-| `temporal.CreatedAtString` | `DateTime(as: string) @onCreate(now())` |
-| `temporal.UpdatedAtString` | `DateTime(as: string) @onCreate(now()) @onUpdate(now())` |
-| `temporal.CreatedAtJsDate` | `TimestamptzJsDate @onCreate(now())` |
-| `temporal.UpdatedAtJsDate` | `TimestamptzJsDate @onCreate(now()) @onUpdate(now())` |
+| Before                     | After, in PSL                                              |
+| -------------------------- | ---------------------------------------------------------- |
+| `temporal.CreatedAt`       | `DateTime(as: temporal) @onCreate(now())`                  |
+| `temporal.UpdatedAt`       | `DateTime(as: temporal) @onCreate(now()) @onUpdate(now())` |
+| `temporal.CreatedAtString` | `DateTime(as: string) @onCreate(now())`                    |
+| `temporal.UpdatedAtString` | `DateTime(as: string) @onCreate(now()) @onUpdate(now())`   |
+| `temporal.CreatedAtJsDate` | `TimestamptzJsDate @onCreate(now())`                       |
+| `temporal.UpdatedAtJsDate` | `TimestamptzJsDate @onCreate(now()) @onUpdate(now())`      |
 
 `DateTime(as: temporal)` is exactly `TimestamptzTemporal`, and `DateTime(as: string)` exactly `TimestamptzString`; either form gives the same contract. `TimestamptzJsDate` keeps its explicit name, because `DateTime` gives `TimestamptzJsDate(3)`, which stores a precision the alias did not.
 
@@ -398,7 +406,6 @@ A JavaScript `Date` holds milliseconds. On a column with fewer fraction digits, 
 
 The contract records the precision beside the generator, for example `{ "kind": "generator", "id": "timestampNow", "params": { "precision": 3 } }`. For each project with such a field, including every project whose `prisma.config.ts` uses `prisma7Schema(...)`, run `prisma contract emit` and commit the new `contract.json` and `contract.d.ts`. The storage hash does not change, and the database marker holds only the storage and profile hashes, so there is no migration to plan and no need to run `prisma db sign`. SQLite and MongoDB contracts do not change.
 
-
 ## Extension packs declare their Postgres extension
 
 Re-run `prisma contract emit` and commit the files it writes under `migrations/`. For pgvector, PostGIS and ParadeDB this moves `migrations/<space-id>/refs/head.json` to a head with no invariants and adds two migrations to `migrations/<space-id>/`: one from the pack's old head and one from the empty contract.
@@ -410,7 +417,6 @@ prisma db migrate
 ```
 
 On a database the old install migration already ran on, the extension is installed, so the new migration only moves the pack's marker.
-
 
 ## MongoDB merges identical and redundant indexes
 
@@ -440,20 +446,22 @@ The detection matches a MongoDB schema or `defineContract` file that writes a un
 
 In the `mongosh` commands above, replace `User` with your collection's name. It is the model name unless `@@map` changes it.
 
-
 ## Create a Mongo runtime driver from its descriptor
 
 Put the descriptor on the execution stack, create the driver from the stack, and connect it to a binding. A `{ kind: 'url', url, dbName }` binding makes the driver open a `MongoClient` and close it on `close()`. A `{ kind: 'mongoClient', client, dbName }` binding uses your client and leaves it open.
 
 ```ts
 // Before
-import { createMongoDriver } from '@prisma/orm-mongo/driver';
+import { createMongoDriver } from "@prisma/orm-mongo/driver";
 
-const stack = createMongoExecutionStack({ target: mongoRuntimeTarget, adapter: mongoRuntimeAdapter });
+const stack = createMongoExecutionStack({
+  target: mongoRuntimeTarget,
+  adapter: mongoRuntimeAdapter,
+});
 const driver = await createMongoDriver(url, dbName);
 
 // After
-import mongoRuntimeDriver from '@prisma/orm-mongo/driver/runtime';
+import mongoRuntimeDriver from "@prisma/orm-mongo/driver/runtime";
 
 const stack = createMongoExecutionStack({
   target: mongoRuntimeTarget,
@@ -461,13 +469,12 @@ const stack = createMongoExecutionStack({
   driver: mongoRuntimeDriver,
 });
 const driver = stack.driver.create();
-await driver.connect({ kind: 'url', url, dbName });
+await driver.connect({ kind: "url", url, dbName });
 ```
 
 Replace `MongoDriverImpl.fromDb(client.db(dbName))` with `driver.connect({ kind: 'mongoClient', client, dbName })` on a driver created the same way. Code that only sends DDL through a control adapter can use the control driver instead: `await mongoControlDriver.create(url)`, with `mongoControlDriver` the default export of `@prisma/orm-mongo/driver/control`. The control driver uses the database the URL names, so put `dbName` in the URL's path, for example `mongodb://localhost:27017/app`.
 
 `createMongoRuntime(...)` closes the driver when the runtime closes, so keep calling `runtime.close()` and drop any separate `driver.close()`.
-
 
 ## The MongoDB query surfaces and runtime take an execution context
 
@@ -475,17 +482,17 @@ Replace `MongoDriverImpl.fromDb(client.db(dbName))` with `driver.connect({ kind:
 
 ```ts
 // Before
-import { mongoQuery } from '@prisma/orm-mongo/query-builder';
+import { mongoQuery } from "@prisma/orm-mongo/query-builder";
 const query = mongoQuery({ contract });
 const raw = mongoRaw({ contract });
 
 // After
-import mongoStatic from '@prisma/orm-mongo/static';
+import mongoStatic from "@prisma/orm-mongo/static";
 const { query, raw } = mongoStatic({ contract });
 
 // Or, with a client
 const db = mongo({ contract, url });
-db.query.from('orders');
+db.query.from("orders");
 ```
 
 Code that builds the ORM itself passes the context, which also fills generated fields:
@@ -493,11 +500,11 @@ Code that builds the ORM itself passes the context, which also fills generated f
 ```ts
 // Before
 const orm = mongoOrm({ contract, executor, mutationDefaults: context, enums });
-const users = createMongoCollection(contract, 'User', executor, enums, context);
+const users = createMongoCollection(contract, "User", executor, enums, context);
 
 // After, as the SQL orm({ context, runtime })
 const orm = mongoOrm({ context, runtime: executor });
-const users = createMongoCollection({ context, runtime: executor }, 'User');
+const users = createMongoCollection({ context, runtime: executor }, "User");
 ```
 
 The runtime takes an adapter beside the context, as the SQL runtime does, and reads the target from the context's contract:
@@ -513,7 +520,6 @@ const runtime = createMongoRuntime({ context, adapter: stack.adapter.create(stac
 ```
 
 `MongoExecutionContext` takes one type parameter, a MongoDB contract: `MongoExecutionContext<Contract>`.
-
 
 ## `connect()` on a client is safe to call again
 
@@ -533,7 +539,7 @@ A handler that only guarded a `connect()` without options can go:
 ```ts
 // Before
 await db.connect().catch((error) => {
-  if (error.code !== 'DRIVER.ALREADY_CONNECTED') throw error;
+  if (error.code !== "DRIVER.ALREADY_CONNECTED") throw error;
 });
 
 // After
@@ -544,10 +550,10 @@ Keep a handler that guards `connect(options)`: that call still rejects with `DRI
 
 ```ts
 // Before
-await expect(db.connect({ url })).rejects.toThrow('Postgres client already connected');
+await expect(db.connect({ url })).rejects.toThrow("Postgres client already connected");
 
 // After
-await expect(db.connect({ url })).rejects.toThrow('Postgres client is already bound');
+await expect(db.connect({ url })).rejects.toThrow("Postgres client is already bound");
 ```
 
 ## `contract-artifacts-restamp`

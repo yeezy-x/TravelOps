@@ -145,7 +145,7 @@ changes:
       matches:
         - '(?<![\w$])(?:TimestamptzString|TimestampString|DateString|TimeString|Timetz)(?![\w$])'
         - '(?<![\w$])(?:timestamptzStringColumn|timestampStringColumn|dateStringColumn|timeStringColumn|timetzColumn|createdAtString|updatedAtString)(?![\w$])'
-        - 'pg/(?:timestamptz-string|timestamp-string|date-string|time-string|timetz)@1'
+        - "pg/(?:timestamptz-string|timestamp-string|date-string|time-string|timetz)@1"
   - id: date-style-iso-required
     summary: |
       The PostgreSQL driver ensures `DateStyle=ISO` on every connection it uses, including a `pg.Pool` or `pg.Client` the application passes to Prisma, which it sets with a statement. A statement in the application that sets a `DateStyle` other than `ISO`, or a pooler that drops the startup option, makes every read of a date or timestamp fail with `RUNTIME.DATE_STYLE_NOT_ISO`.
@@ -230,10 +230,10 @@ The MongoDB PSL contract source now builds its contract through the same builder
 Pass the MongoDB target pack as `target`:
 
 ```typescript
-import { mongoContract } from '@prisma/orm-family-mongo/contract-psl/provider';
-import mongoTargetPack from '@prisma/orm-mongo/target/pack';
+import { mongoContract } from "@prisma/orm-family-mongo/contract-psl/provider";
+import mongoTargetPack from "@prisma/orm-mongo/target/pack";
 
-const contract = mongoContract('./prisma/schema.prisma', { target: mongoTargetPack });
+const contract = mongoContract("./prisma/schema.prisma", { target: mongoTargetPack });
 ```
 
 Keep any other options you pass, such as `output`, in the same object. A config that names its contract through `defineConfig({ contract: './prisma/schema.prisma' })` from `@prisma/orm-mongo/config` already passes the pack. An app that calls `mongoContract` itself imports it from `@prisma/orm-family-mongo/contract-psl/provider`, so it depends on `@prisma/orm-family-mongo` as well as `@prisma/orm-mongo`; `@prisma/orm-mongo` does not export `mongoContract`. A call without `target` is refused with `CONTRACT.ARGUMENT_INVALID` (`reason: 'target-pack-missing'`).
@@ -247,7 +247,7 @@ Two MongoDB type names change so that they match SQL's. The types themselves do 
 The type of the object you pass to `defineContract` is now `ContractInput`, as it is in SQL. Rename the import and each use:
 
 ```typescript
-import type { ContractInput } from '@prisma/orm-mongo/contract-builder';
+import type { ContractInput } from "@prisma/orm-mongo/contract-builder";
 ```
 
 ### `mongo-model-definition-removed`
@@ -255,8 +255,8 @@ import type { ContractInput } from '@prisma/orm-mongo/contract-builder';
 `MongoModelDefinition` was an alias for a model of a built contract. SQL has no such alias. Write the type it stood for:
 
 ```typescript
-import type { ContractModel } from '@prisma/orm-mongo/contract/types';
-import type { MongoModelStorage } from '@prisma/orm-mongo/family-contract';
+import type { ContractModel } from "@prisma/orm-mongo/contract/types";
+import type { MongoModelStorage } from "@prisma/orm-mongo/family-contract";
 
 function collectionOf(model: ContractModel<MongoModelStorage>): string | undefined {
   return model.storage.collection;
@@ -274,12 +274,12 @@ The detection matches a file that imports the MongoDB contract builder and decla
 A discriminator must be a required text field, and each variant must be declared and stored in its base's collection:
 
 ```typescript
-const Task = model('Task', {
-  collection: 'tasks',
+const Task = model("Task", {
+  collection: "tasks",
   fields: { _id: field.objectId(), type: field.string() },
-  discriminator: { field: 'type', variants: { Bug: { value: 'bug' } } },
+  discriminator: { field: "type", variants: { Bug: { value: "bug" } } },
 });
-const Bug = model('Bug', { base: Task, fields: { severity: field.int32() } });
+const Bug = model("Bug", { base: Task, fields: { severity: field.int32() } });
 ```
 
 ### `mongo-index-shape-rules`
@@ -379,7 +379,7 @@ verifyContractSpaces({
   spaceDirsOnDisk,
   headRefsBySpace,
   markerRowsBySpace,
-  markerLocation: 'prisma_contract.marker',
+  markerLocation: "prisma_contract.marker",
 });
 ```
 
@@ -397,7 +397,7 @@ const plan = await executeMigrateShowPlan({ ...options });
 
 // After: the operation returns MIGRATION.MARKER_MISMATCH itself
 const plan = await executeMigrateShowPlan({ ...options, invocation });
-if (!plan.ok && plan.failure.code === 'MIGRATION.MARKER_MISMATCH') {
+if (!plan.ok && plan.failure.code === "MIGRATION.MARKER_MISMATCH") {
   // plan.failure.meta: spaceId, markerHash, targetHash, lastGraphHash?, missingMigrations?
 }
 ```
@@ -420,11 +420,11 @@ The error's text changes too. `prisma db migrate` now prints `The database's mar
 
 On PostgreSQL, a column type that several codecs read now names the kind of value in its name. The `Temporal` types gain the suffix `Temporal`, and the interval type that reads `{ months, days, micros }` gains the suffix `Parts`:
 
-| Before | After | Reads |
-| --- | --- | --- |
-| `Timestamptz(p?)` | `TimestamptzTemporal(p?)` | `Temporal.Instant` |
-| `Timestamp(p?)` | `TimestampTemporal(p?)` | `Temporal.PlainDateTime` |
-| `Interval(p?)` | `IntervalParts(p?)` | `{ months, days, micros }` |
+| Before            | After                     | Reads                      |
+| ----------------- | ------------------------- | -------------------------- |
+| `Timestamptz(p?)` | `TimestamptzTemporal(p?)` | `Temporal.Instant`         |
+| `Timestamp(p?)`   | `TimestampTemporal(p?)`   | `Temporal.PlainDateTime`   |
+| `Interval(p?)`    | `IntervalParts(p?)`       | `{ months, days, micros }` |
 
 This change leaves `DateTime`, `Date` and `Time` as they are, and adds `DateTemporal` and `TimeTemporal` as the explicit names of what `Date` and `Time` read today. A later release gives `DateTime`, `Date` and `Time` new meanings, as convenience date and time types, and brings its own instructions. To keep what a field reads today through that change, you can already write the explicit name: `TimestamptzTemporal` for `DateTime`, `DateTemporal` for `Date` and `TimeTemporal` for `Time`.
 
@@ -455,7 +455,7 @@ field.column(intervalPartsColumn(6)); // was intervalColumn(6)
 ### `interval-with-precision-typed-as-parts`
 
 ```ts
-import type { PgInterval } from '@prisma/orm-postgres/target/codec-types';
+import type { PgInterval } from "@prisma/orm-postgres/target/codec-types";
 
 const span: PgInterval = row.span; // an IntervalParts(6) column
 ```
@@ -465,18 +465,15 @@ const span: PgInterval = row.span; // an IntervalParts(6) column
 Remove the four names from the import, and leave the rest of the file as it is:
 
 ```ts
-import type {
-  CodecTypes as PgTypes,
-  JsonValue,
-} from '@prisma/orm-postgres/target/codec-types'; // was also importing Interval, Time, Timestamp and Timestamptz
+import type { CodecTypes as PgTypes, JsonValue } from "@prisma/orm-postgres/target/codec-types"; // was also importing Interval, Time, Timestamp and Timestamptz
 ```
 
 ### `temporal-types-from-temporal-spec`
 
 ```ts
-import type { Temporal } from 'temporal-spec';
+import type { Temporal } from "temporal-spec";
 
-expectTypeOf<Row['createdAt']>().toEqualTypeOf<Temporal.Instant>();
+expectTypeOf<Row["createdAt"]>().toEqualTypeOf<Temporal.Instant>();
 ```
 
 If the test file also creates `Temporal` values, import the type under another name, such as `import type { Temporal as TemporalTypes } from 'temporal-spec'`, so the runtime `Temporal` stays in scope.
@@ -491,12 +488,12 @@ No change is needed now. The next `prisma contract emit` adds rows for the three
 
 A column of `TimestamptzString`, `TimestampString`, `DateString`, `TimeString` or `Timetz` used to read the text PostgreSQL prints, which depends on the session's `TimeZone` and `DateStyle`. It now reads ISO 8601, the same on every server:
 
-| Type | Before | After |
-| --- | --- | --- |
-| `TimestamptzString` | `2024-01-01 01:00:00+01` on a server in `Europe/Berlin` | `2024-01-01T00:00:00Z` |
-| `TimestampString` | `2024-01-01 12:34:56.5` | `2024-01-01T12:34:56.5` |
-| `DateString`, 44 BC | `0044-03-15 BC` | `-000043-03-15` |
-| `Timetz` | `12:34:56+02`, `12:34:56+00` | `12:34:56+02:00`, `12:34:56Z` |
+| Type                | Before                                                  | After                         |
+| ------------------- | ------------------------------------------------------- | ----------------------------- |
+| `TimestamptzString` | `2024-01-01 01:00:00+01` on a server in `Europe/Berlin` | `2024-01-01T00:00:00Z`        |
+| `TimestampString`   | `2024-01-01 12:34:56.5`                                 | `2024-01-01T12:34:56.5`       |
+| `DateString`, 44 BC | `0044-03-15 BC`                                         | `-000043-03-15`               |
+| `Timetz`            | `12:34:56+02`, `12:34:56+00`                            | `12:34:56+02:00`, `12:34:56Z` |
 
 The same text is read inside an `.include()`. `infinity` and `-infinity` are unchanged. The generated `now()` values of these columns, such as `temporal.UpdatedAtString`, are written in the same form.
 
@@ -516,7 +513,7 @@ scheduledAt: field.column(timestamptzStringColumn).default('2024-01-15 10:30:00+
 scheduledAt: field.column(timestamptzStringColumn).default('2024-01-15T10:30:00Z'),
 ```
 
-`contract emit` refuses a default in another form with `CONTRACT.DEFAULT_INVALID`, and the message shows the form to write. A PSL default written with a tag, such as `` @default(timestamptz`2024-01-15 10:30:00+00`) ``, is unchanged. An enum on `TimestampString`, `TimestamptzString` or `Timetz` is now allowed.
+`contract emit` refuses a default in another form with `CONTRACT.DEFAULT_INVALID`, and the message shows the form to write. A PSL default written with a tag, such as ``@default(timestamptz`2024-01-15 10:30:00+00`)``, is unchanged. An enum on `TimestampString`, `TimestamptzString` or `Timetz` is now allowed.
 
 The `now()` value of a `TimestampString(p)` or `TimestamptzString(p)` column is now rounded down to the column's precision, as a time column's is, so the column stores the value generated. Emit the contract again: its execution hash changes where such a column has a `now()` generator.
 
@@ -594,21 +591,21 @@ In the tables, a PSL preset is written as in a schema. Its TypeScript form is th
 
 Each identifier preset is replaced by the type alias for its column: `UuidString`, `Ulid`, `Nanoid`, `Cuid2` or `Ksuid`. The field writes `@id` and `@onCreate(...)` itself where the preset set them. On Postgres, write the alias as a top-level name, `Ulid` in PSL and `type.Ulid()` in TypeScript, as the table does. On SQLite, write it in the `sql` namespace, `sql.Ulid` and `type.sql.Ulid()`. Both forms store the same column as `Char(26)`. A nanoid of another size has no alias, so its column is written out: `Char(n)` on Postgres, `sql.Char(n)` on SQLite.
 
-| Preset | Stores | PSL replacement | TypeScript replacement |
-|---|---|---|---|
-| `uuidString()` | `sql/char@1`, `{ length: 36 }` | `UuidString` | `field.column(type.UuidString())` |
-| `ulid()` | `sql/char@1`, `{ length: 26 }` | `Ulid` | `field.column(type.Ulid())` |
-| `nanoid()` | `sql/char@1`, `{ length: 21 }` | `Nanoid` | `field.column(type.Nanoid())` |
-| `nanoid({ size: n })` | `sql/char@1`, `{ length: n }` | `Char(n)` | `field.column(type.Char(n))` |
-| `cuid2()` | `sql/char@1`, `{ length: 24 }` | `Cuid2` | `field.column(type.Cuid2())` |
-| `ksuid()` | `sql/char@1`, `{ length: 27 }` | `Ksuid` | `field.column(type.Ksuid())` |
-| `id.uuidv4String()` | as `uuidString()`, `@id`, `uuidv4` on create | `UuidString @id @onCreate(uuid())` | `field.column(type.UuidString()).id().onCreate(gen.uuid())` |
-| `id.uuidv7String()` | as above, `uuidv7` | `UuidString @id @onCreate(uuid(7))` | `field.column(type.UuidString()).id().onCreate(gen.uuid(7))` |
-| `id.ulid()` | `{ length: 26 }`, `@id`, `ulid` | `Ulid @id @onCreate(ulid())` | `field.column(type.Ulid()).id().onCreate(gen.ulid())` |
-| `id.nanoid()` | `{ length: 21 }`, `@id`, `nanoid` | `Nanoid @id @onCreate(nanoid())` | `field.column(type.Nanoid()).id().onCreate(gen.nanoid())` |
-| `id.nanoid({ size: n })` | `{ length: n }`, `@id`, `nanoid` of size `n` | `Char(n) @id @onCreate(nanoid(n))` | `field.column(type.Char(n)).id().onCreate(gen.nanoid(n))` |
-| `id.cuid2()` | `{ length: 24 }`, `@id`, `cuid2` | `Cuid2 @id @onCreate(cuid(2))` | `field.column(type.Cuid2()).id().onCreate(gen.cuid(2))` |
-| `id.ksuid()` | `{ length: 27 }`, `@id`, `ksuid` | `Ksuid @id @onCreate(ksuid())` | `field.column(type.Ksuid()).id().onCreate(gen.ksuid())` |
+| Preset                   | Stores                                       | PSL replacement                     | TypeScript replacement                                       |
+| ------------------------ | -------------------------------------------- | ----------------------------------- | ------------------------------------------------------------ |
+| `uuidString()`           | `sql/char@1`, `{ length: 36 }`               | `UuidString`                        | `field.column(type.UuidString())`                            |
+| `ulid()`                 | `sql/char@1`, `{ length: 26 }`               | `Ulid`                              | `field.column(type.Ulid())`                                  |
+| `nanoid()`               | `sql/char@1`, `{ length: 21 }`               | `Nanoid`                            | `field.column(type.Nanoid())`                                |
+| `nanoid({ size: n })`    | `sql/char@1`, `{ length: n }`                | `Char(n)`                           | `field.column(type.Char(n))`                                 |
+| `cuid2()`                | `sql/char@1`, `{ length: 24 }`               | `Cuid2`                             | `field.column(type.Cuid2())`                                 |
+| `ksuid()`                | `sql/char@1`, `{ length: 27 }`               | `Ksuid`                             | `field.column(type.Ksuid())`                                 |
+| `id.uuidv4String()`      | as `uuidString()`, `@id`, `uuidv4` on create | `UuidString @id @onCreate(uuid())`  | `field.column(type.UuidString()).id().onCreate(gen.uuid())`  |
+| `id.uuidv7String()`      | as above, `uuidv7`                           | `UuidString @id @onCreate(uuid(7))` | `field.column(type.UuidString()).id().onCreate(gen.uuid(7))` |
+| `id.ulid()`              | `{ length: 26 }`, `@id`, `ulid`              | `Ulid @id @onCreate(ulid())`        | `field.column(type.Ulid()).id().onCreate(gen.ulid())`        |
+| `id.nanoid()`            | `{ length: 21 }`, `@id`, `nanoid`            | `Nanoid @id @onCreate(nanoid())`    | `field.column(type.Nanoid()).id().onCreate(gen.nanoid())`    |
+| `id.nanoid({ size: n })` | `{ length: n }`, `@id`, `nanoid` of size `n` | `Char(n) @id @onCreate(nanoid(n))`  | `field.column(type.Char(n)).id().onCreate(gen.nanoid(n))`    |
+| `id.cuid2()`             | `{ length: 24 }`, `@id`, `cuid2`             | `Cuid2 @id @onCreate(cuid(2))`      | `field.column(type.Cuid2()).id().onCreate(gen.cuid(2))`      |
+| `id.ksuid()`             | `{ length: 27 }`, `@id`, `ksuid`             | `Ksuid @id @onCreate(ksuid())`      | `field.column(type.Ksuid()).id().onCreate(gen.ksuid())`      |
 
 A foreign key that holds one of these identifiers uses the alias alone, as in `authorId Ulid`, because its value is copied from the row it points at.
 
@@ -640,34 +637,34 @@ A TypeScript `id` preset's trailing `{ name }`, as in `field.id.uuidv4String({ n
 
 #### Postgres presets
 
-| Preset | Stores | PSL replacement | TypeScript replacement |
-|---|---|---|---|
-| `text()` | `pg/text@1` | `String` | `field.column(type.String())` |
-| `int()` | `pg/int4@1` | `Int` | `field.column(type.Int())` |
-| `bigint()` | `pg/int8@1` | `BigInt` | `field.column(type.BigInt())` |
-| `float()` | `pg/float8@1` | `Float` | `field.column(type.Float())` |
-| `decimal()` | `pg/numeric@1`, no parameters | `Decimal` | `field.column(type.Decimal())` |
-| `boolean()` | `pg/bool@1` | `Boolean` | `field.column(type.Boolean())` |
-| `json()` | `pg/jsonb@1` | `Jsonb` (not `Json`, which is `pg/json@1`) | `field.column(type.Jsonb())` |
-| `bytes()` | `pg/bytea@1` | `Bytes` | `field.column(type.Bytes())` |
-| `dateTime()` | `pg/timestamptz-temporal@1` | `DateTime` | `field.column(type.DateTime())` |
-| `uuidNative()` | `pg/uuid@1` | `Uuid` | `field.column(type.Uuid())` |
-| `id.uuidv4Native()` | `pg/uuid@1`, `@id`, `uuidv4` | `Uuid @id @onCreate(uuid())` | `field.column(type.Uuid()).id().onCreate(gen.uuid())` |
-| `id.uuidv7Native()` | `pg/uuid@1`, `@id`, `uuidv7` | `Uuid @id @onCreate(uuid(7))` | `field.column(type.Uuid()).id().onCreate(gen.uuid(7))` |
-| `temporal.createdAt()` | `pg/timestamptz-temporal@1`, now on create | `temporal.CreatedAt` | `field.column(type.temporal.CreatedAt())` |
-| `temporal.updatedAt()` | the same, on create and update | `temporal.UpdatedAt` | `field.column(type.temporal.UpdatedAt())` |
-| `temporal.createdAtString()`, `temporal.updatedAtString()` | `pg/timestamptz-string@1` | `temporal.CreatedAtString`, `temporal.UpdatedAtString` | `field.column(type.temporal.CreatedAtString())`, `field.column(type.temporal.UpdatedAtString())` |
-| `temporal.createdAtJsDate()`, `temporal.updatedAtJsDate()` | `pg/timestamptz-date@1` | `temporal.CreatedAtJsDate`, `temporal.UpdatedAtJsDate` | `field.column(type.temporal.CreatedAtJsDate())`, `field.column(type.temporal.UpdatedAtJsDate())` |
-| `temporal.timestamp(p, onCreate: now, onUpdate: now)` | `pg/timestamp-temporal@1`, `{ precision: p }` | `TimestampTemporal(p) @onCreate(now()) @onUpdate(now())` | `field.column(type.TimestampTemporal(p)).onCreate(gen.now()).onUpdate(gen.now())` |
-| `temporal.timestamptz(...)` | `pg/timestamptz-temporal@1` | `TimestamptzTemporal(p)` and the attributes | `field.column(type.TimestamptzTemporal(p))` and the calls |
-| `temporal.timestampString(...)` | `pg/timestamp-string@1` | `TimestampString(p)` and the attributes | `field.column(type.TimestampString(p))` and the calls |
-| `temporal.timestamptzString(...)` | `pg/timestamptz-string@1` | `TimestamptzString(p)` and the attributes | `field.column(type.TimestamptzString(p))` and the calls |
-| `temporal.timestamptzJsDate(...)` | `pg/timestamptz-date@1` | `TimestamptzJsDate(p)` and the attributes | `field.column(type.TimestamptzJsDate(p))` and the calls |
-| `temporal.date(onCreate: now, onUpdate: now)` | `pg/date-temporal@1` | `Date` and the attributes | `field.column(type.Date())` and the calls |
-| `temporal.dateString(...)` | `pg/date-string@1` | `DateString` and the attributes | `field.column(type.DateString())` and the calls |
-| `temporal.time(p, ...)` | `pg/time-temporal@1` | `Time(p)` and the attributes | `field.column(type.Time(p))` and the calls |
-| `temporal.timeString(p, ...)` | `pg/time-string@1` | `TimeString(p)` and the attributes | `field.column(type.TimeString(p))` and the calls |
-| `temporal.timetz(p, ...)` | `pg/timetz@1` | `Timetz(p)` and the attributes | `field.column(type.Timetz(p))` and the calls |
+| Preset                                                     | Stores                                        | PSL replacement                                          | TypeScript replacement                                                                           |
+| ---------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `text()`                                                   | `pg/text@1`                                   | `String`                                                 | `field.column(type.String())`                                                                    |
+| `int()`                                                    | `pg/int4@1`                                   | `Int`                                                    | `field.column(type.Int())`                                                                       |
+| `bigint()`                                                 | `pg/int8@1`                                   | `BigInt`                                                 | `field.column(type.BigInt())`                                                                    |
+| `float()`                                                  | `pg/float8@1`                                 | `Float`                                                  | `field.column(type.Float())`                                                                     |
+| `decimal()`                                                | `pg/numeric@1`, no parameters                 | `Decimal`                                                | `field.column(type.Decimal())`                                                                   |
+| `boolean()`                                                | `pg/bool@1`                                   | `Boolean`                                                | `field.column(type.Boolean())`                                                                   |
+| `json()`                                                   | `pg/jsonb@1`                                  | `Jsonb` (not `Json`, which is `pg/json@1`)               | `field.column(type.Jsonb())`                                                                     |
+| `bytes()`                                                  | `pg/bytea@1`                                  | `Bytes`                                                  | `field.column(type.Bytes())`                                                                     |
+| `dateTime()`                                               | `pg/timestamptz-temporal@1`                   | `DateTime`                                               | `field.column(type.DateTime())`                                                                  |
+| `uuidNative()`                                             | `pg/uuid@1`                                   | `Uuid`                                                   | `field.column(type.Uuid())`                                                                      |
+| `id.uuidv4Native()`                                        | `pg/uuid@1`, `@id`, `uuidv4`                  | `Uuid @id @onCreate(uuid())`                             | `field.column(type.Uuid()).id().onCreate(gen.uuid())`                                            |
+| `id.uuidv7Native()`                                        | `pg/uuid@1`, `@id`, `uuidv7`                  | `Uuid @id @onCreate(uuid(7))`                            | `field.column(type.Uuid()).id().onCreate(gen.uuid(7))`                                           |
+| `temporal.createdAt()`                                     | `pg/timestamptz-temporal@1`, now on create    | `temporal.CreatedAt`                                     | `field.column(type.temporal.CreatedAt())`                                                        |
+| `temporal.updatedAt()`                                     | the same, on create and update                | `temporal.UpdatedAt`                                     | `field.column(type.temporal.UpdatedAt())`                                                        |
+| `temporal.createdAtString()`, `temporal.updatedAtString()` | `pg/timestamptz-string@1`                     | `temporal.CreatedAtString`, `temporal.UpdatedAtString`   | `field.column(type.temporal.CreatedAtString())`, `field.column(type.temporal.UpdatedAtString())` |
+| `temporal.createdAtJsDate()`, `temporal.updatedAtJsDate()` | `pg/timestamptz-date@1`                       | `temporal.CreatedAtJsDate`, `temporal.UpdatedAtJsDate`   | `field.column(type.temporal.CreatedAtJsDate())`, `field.column(type.temporal.UpdatedAtJsDate())` |
+| `temporal.timestamp(p, onCreate: now, onUpdate: now)`      | `pg/timestamp-temporal@1`, `{ precision: p }` | `TimestampTemporal(p) @onCreate(now()) @onUpdate(now())` | `field.column(type.TimestampTemporal(p)).onCreate(gen.now()).onUpdate(gen.now())`                |
+| `temporal.timestamptz(...)`                                | `pg/timestamptz-temporal@1`                   | `TimestamptzTemporal(p)` and the attributes              | `field.column(type.TimestamptzTemporal(p))` and the calls                                        |
+| `temporal.timestampString(...)`                            | `pg/timestamp-string@1`                       | `TimestampString(p)` and the attributes                  | `field.column(type.TimestampString(p))` and the calls                                            |
+| `temporal.timestamptzString(...)`                          | `pg/timestamptz-string@1`                     | `TimestamptzString(p)` and the attributes                | `field.column(type.TimestamptzString(p))` and the calls                                          |
+| `temporal.timestamptzJsDate(...)`                          | `pg/timestamptz-date@1`                       | `TimestamptzJsDate(p)` and the attributes                | `field.column(type.TimestamptzJsDate(p))` and the calls                                          |
+| `temporal.date(onCreate: now, onUpdate: now)`              | `pg/date-temporal@1`                          | `Date` and the attributes                                | `field.column(type.Date())` and the calls                                                        |
+| `temporal.dateString(...)`                                 | `pg/date-string@1`                            | `DateString` and the attributes                          | `field.column(type.DateString())` and the calls                                                  |
+| `temporal.time(p, ...)`                                    | `pg/time-temporal@1`                          | `Time(p)` and the attributes                             | `field.column(type.Time(p))` and the calls                                                       |
+| `temporal.timeString(p, ...)`                              | `pg/time-string@1`                            | `TimeString(p)` and the attributes                       | `field.column(type.TimeString(p))` and the calls                                                 |
+| `temporal.timetz(p, ...)`                                  | `pg/timetz@1`                                 | `Timetz(p)` and the attributes                           | `field.column(type.Timetz(p))` and the calls                                                     |
 
 The `temporal.<type>(...)` presets take an optional precision `p` (the first argument, or `precision: p`) and the phases `onCreate: now` and `onUpdate: now`. Write the precision as the constructor's argument, and leave it out when the preset left it out: `temporal.timestamptz()` is `TimestamptzTemporal`. Write each phase the preset set as its attribute, `@onCreate(now())` or `@onUpdate(now())`, and leave out a phase it did not set: `temporal.time(3, onUpdate: now)` is `Time(3) @onUpdate(now())`. A preset with no phase is the bare constructor.
 
@@ -677,34 +674,34 @@ Attributes and calls written after the preset stay after the replacement: `tempo
 
 #### SQLite presets
 
-| Preset | Stores | PSL replacement | TypeScript replacement |
-|---|---|---|---|
-| `temporal.createdAt()`, `temporal.updatedAt()` | `sqlite/datetime@1`, now on create, and on update for `updatedAt` | `temporal.CreatedAt`, `temporal.UpdatedAt` | `field.column(type.temporal.CreatedAt())`, `field.column(type.temporal.UpdatedAt())` |
-| `temporal.datetime(onCreate: now, onUpdate: now)` | `sqlite/datetime@1` | `DateTime @onCreate(now()) @onUpdate(now())` | `field.column(type.DateTime()).onCreate(gen.now()).onUpdate(gen.now())` |
+| Preset                                            | Stores                                                            | PSL replacement                              | TypeScript replacement                                                               |
+| ------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `temporal.createdAt()`, `temporal.updatedAt()`    | `sqlite/datetime@1`, now on create, and on update for `updatedAt` | `temporal.CreatedAt`, `temporal.UpdatedAt`   | `field.column(type.temporal.CreatedAt())`, `field.column(type.temporal.UpdatedAt())` |
+| `temporal.datetime(onCreate: now, onUpdate: now)` | `sqlite/datetime@1`                                               | `DateTime @onCreate(now()) @onUpdate(now())` | `field.column(type.DateTime()).onCreate(gen.now()).onUpdate(gen.now())`              |
 
 The SQL family presets in the first table also existed on SQLite. Their replacements use the `sql.` aliases, such as `sql.Ulid` and `type.sql.Ulid()`, and `sql.Char(n)` and `type.sql.Char(n)` for a nanoid of another size.
 
 #### MongoDB presets
 
-| Preset | Stores | PSL replacement | TypeScript replacement |
-|---|---|---|---|
-| `temporal.createdAt()` | `mongo/date@1`, now on create | `temporal.CreatedAt` | `field.date().onCreate(gen.now())` |
-| `temporal.updatedAt()` | the same, on create and update | `temporal.UpdatedAt` | `field.date().onCreate(gen.now()).onUpdate(gen.now())` |
-| `temporal.timestamp(onCreate: now, onUpdate: now)` | `mongo/date@1` | `Date @onCreate(now()) @onUpdate(now())` | `field.date().onCreate(gen.now()).onUpdate(gen.now())` |
+| Preset                                             | Stores                         | PSL replacement                          | TypeScript replacement                                 |
+| -------------------------------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------------------------ |
+| `temporal.createdAt()`                             | `mongo/date@1`, now on create  | `temporal.CreatedAt`                     | `field.date().onCreate(gen.now())`                     |
+| `temporal.updatedAt()`                             | the same, on create and update | `temporal.UpdatedAt`                     | `field.date().onCreate(gen.now()).onUpdate(gen.now())` |
+| `temporal.timestamp(onCreate: now, onUpdate: now)` | `mongo/date@1`                 | `Date @onCreate(now()) @onUpdate(now())` | `field.date().onCreate(gen.now()).onUpdate(gen.now())` |
 
 The MongoDB TypeScript builder has no `type` helpers, so its replacements use `field.date()`.
 
 #### `field.generated(...)`, in the SQL TypeScript builder
 
-| Before | After |
-|---|---|
-| `field.generated(uuidv4())` | `field.column(type.UuidString()).onCreate(gen.uuid())` |
-| `field.generated(uuidv7())` | `field.column(type.UuidString()).onCreate(gen.uuid(7))` |
-| `field.generated(ulid())` | `field.column(type.Ulid()).onCreate(gen.ulid())` |
-| `field.generated(nanoid())` | `field.column(type.Nanoid()).onCreate(gen.nanoid())` |
-| `field.generated(nanoid({ size: n }))` | `field.column(type.Char(n)).onCreate(gen.nanoid(n))` |
-| `field.generated(cuid2())` | `field.column(type.Cuid2()).onCreate(gen.cuid(2))` |
-| `field.generated(ksuid())` | `field.column(type.Ksuid()).onCreate(gen.ksuid())` |
+| Before                                 | After                                                   |
+| -------------------------------------- | ------------------------------------------------------- |
+| `field.generated(uuidv4())`            | `field.column(type.UuidString()).onCreate(gen.uuid())`  |
+| `field.generated(uuidv7())`            | `field.column(type.UuidString()).onCreate(gen.uuid(7))` |
+| `field.generated(ulid())`              | `field.column(type.Ulid()).onCreate(gen.ulid())`        |
+| `field.generated(nanoid())`            | `field.column(type.Nanoid()).onCreate(gen.nanoid())`    |
+| `field.generated(nanoid({ size: n }))` | `field.column(type.Char(n)).onCreate(gen.nanoid(n))`    |
+| `field.generated(cuid2())`             | `field.column(type.Cuid2()).onCreate(gen.cuid(2))`      |
+| `field.generated(ksuid())`             | `field.column(type.Ksuid()).onCreate(gen.ksuid())`      |
 
 On SQLite write the `sql.` forms, such as `type.sql.Ulid()` and `type.sql.Char(n)`. A `.id()` after `field.generated(...)` stays `.id()` on the replacement.
 
@@ -737,7 +734,7 @@ A query fragment that declares its fields with the `field` exported by `@prisma/
 
 ```ts
 // Before
-import { field } from '@prisma/orm-postgres/contract-builder';
+import { field } from "@prisma/orm-postgres/contract-builder";
 
 export const createdSince = (since: Temporal.Instant) =>
   db.orm.fragment({ createdAt: field.temporal.timestamptz() }, (rows) =>
@@ -745,7 +742,7 @@ export const createdSince = (since: Temporal.Instant) =>
   );
 
 // After
-import { field, type } from '@prisma/orm-postgres/contract-builder';
+import { field, type } from "@prisma/orm-postgres/contract-builder";
 
 export const createdSince = (since: Temporal.Instant) =>
   db.orm.fragment({ createdAt: field.column(type.TimestamptzTemporal()) }, (rows) =>

@@ -1,4 +1,3 @@
-
 # Prisma 8 — Runtime (`db.ts` Wiring)
 
 > **Edit your data contract. Prisma handles the rest.**
@@ -14,7 +13,7 @@ This skill covers the **runtime entry point** — `db.ts` — and how to compose
 - User wants to wrap operations in `db.transaction(...)` (Postgres, SQLite and Supabase role-bound clients).
 - User is running a one-off script (`tsx my-script.ts`, Node CLI, CI task) and the process won't exit after queries finish, or they need script teardown (`db.close()`, `await using`).
 - User is deploying to a per-request runtime (Cloudflare Workers + Hyperdrive, AWS Lambda, Vercel Edge, Deno Deploy, Bun edge) and needs `postgresServerless()` with `postgres.connect({ url })` per request.
-- User mentions: *db.ts, postgres(), mongo(), middleware, lints, budgets, cache, query log, slow query, DATABASE_URL, .env, connection pool, poolOptions, dev vs prod, transactions, read replicas, multi-database, script won't exit, hangs, db.close, db.end, close connection, pool.end, await using, serverless, edge, Cloudflare Workers, Hyperdrive, postgresServerless, connect per request*.
+- User mentions: _db.ts, postgres(), mongo(), middleware, lints, budgets, cache, query log, slow query, DATABASE_URL, .env, connection pool, poolOptions, dev vs prod, transactions, read replicas, multi-database, script won't exit, hangs, db.close, db.end, close connection, pool.end, await using, serverless, edge, Cloudflare Workers, Hyperdrive, postgresServerless, connect per request_.
 
 ## When Not to Use
 
@@ -27,8 +26,8 @@ This skill covers the **runtime entry point** — `db.ts` — and how to compose
 
 ## Key Concepts
 
-- **`db.ts` is the runtime entry point.** Imports the runtime factory from the `@internal/<target>` façade (`@internal/postgres/runtime`, `@internal/sqlite/runtime`, or `@internal/mongo/runtime`), `contractFromJson` from the same façade's `/static` entry point, the contract artefacts (`contract.json` + the `Contract` type from `contract.d.ts`), and any middleware. Exports the typed `contract` and a `db` value the rest of your app imports. On a per-request runtime, `db.ts` imports `postgresServerless` from `@internal/postgres/serverless` instead and exports the serverless client `postgres`; see *Workflow — Serverless and per-request runtimes*.
-- **`db.ts` imports only from the façade's `/runtime` and `/static` entry points.** Each factory is a *default* export. For Postgres: `import postgres from '@internal/postgres/runtime'`; SQLite: `import sqlite from '@internal/sqlite/runtime'`; Mongo: `import mongo from '@internal/mongo/runtime'`. The factory takes one options object and no type argument: it infers the contract type from `contract`. Turn the emitted JSON into a typed value once with `contractFromJson<Contract>(contractJson)` from the façade's `/static` entry point (`@internal/postgres/static`, `@internal/sqlite/static`, `@internal/mongo/static`; Supabase uses the Postgres one). That call is the only place you write the `Contract` type argument. A contract written in TypeScript with `defineContract` is already a typed value and goes to `{ contract }` directly. A contract value is validated once, however many clients use it.
+- **`db.ts` is the runtime entry point.** Imports the runtime factory from the `@internal/<target>` façade (`@internal/postgres/runtime`, `@internal/sqlite/runtime`, or `@internal/mongo/runtime`), `contractFromJson` from the same façade's `/static` entry point, the contract artefacts (`contract.json` + the `Contract` type from `contract.d.ts`), and any middleware. Exports the typed `contract` and a `db` value the rest of your app imports. On a per-request runtime, `db.ts` imports `postgresServerless` from `@internal/postgres/serverless` instead and exports the serverless client `postgres`; see _Workflow — Serverless and per-request runtimes_.
+- **`db.ts` imports only from the façade's `/runtime` and `/static` entry points.** Each factory is a _default_ export. For Postgres: `import postgres from '@internal/postgres/runtime'`; SQLite: `import sqlite from '@internal/sqlite/runtime'`; Mongo: `import mongo from '@internal/mongo/runtime'`. The factory takes one options object and no type argument: it infers the contract type from `contract`. Turn the emitted JSON into a typed value once with `contractFromJson<Contract>(contractJson)` from the façade's `/static` entry point (`@internal/postgres/static`, `@internal/sqlite/static`, `@internal/mongo/static`; Supabase uses the Postgres one). That call is the only place you write the `Contract` type argument. A contract written in TypeScript with `defineContract` is already a typed value and goes to `{ contract }` directly. A contract value is validated once, however many clients use it.
 - **Lazy connect.** The factory does not connect to the database synchronously. `db.sql` and `db.orm` are available immediately; the driver / pool is instantiated on the first call that needs a runtime (or when you explicitly call `await db.connect({ url })`, which binds the client to that URL), and the pool opens its first database connection on the first query. This is why `db.ts` can be imported in modules that load before the env is ready.
 - **Middleware composes in order.** Every hook runs in the order of the `middleware: [...]` array — the first middleware's `beforeEncode` sees the statement first, and `intercept.onQuery` handlers are consulted in registration order with the first non-`undefined` result winning. Register a cache first so it gets first claim on a hit. Every middleware's `activityEnded` still fires on a cache hit, with `result.source: 'middleware'`.
 - **`prisma.config.ts` vs `.env`.** The config (`definePrismaConfig({ orm: ormConfig({ contract, db, extensions, migrations }) })` — see `references/contract.md`) is for static project shape: contract path, installed extensions, migrations directory, default connection string. `.env` is for per-environment values (`DATABASE_URL`, secrets). Nothing reads `.env` on its own: the scaffolded `prisma.config.ts` starts with `import 'dotenv/config'`, and that import is what loads `.env` into `process.env` before the config (and the CLI running it) reads `process.env['DATABASE_URL']`. Keep the import; a config without it sees no `.env` values. Hardcoding `DATABASE_URL` in the config file leaks credentials and bypasses per-env overrides.
@@ -42,16 +41,16 @@ The concept: `db.ts` is the seam between the emitted contract artefacts (target-
 
 ```typescript
 // src/prisma/db.ts
-import postgres from '@internal/postgres/runtime';
-import { contractFromJson } from '@internal/postgres/static';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import postgres from "@internal/postgres/runtime";
+import { contractFromJson } from "@internal/postgres/static";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
 export const contract = contractFromJson<Contract>(contractJson);
 
 export const db = postgres({
   contract,
-  url: process.env['DATABASE_URL']!,
+  url: process.env["DATABASE_URL"]!,
 });
 ```
 
@@ -63,7 +62,7 @@ Three things to know:
 - **`with { type: 'json' }` is required.** Node's ESM JSON-import-attribute spec. Without it, the import errors.
 - **`url` is optional at construct time.** If `DATABASE_URL` is not set when `db.ts` loads, the factory still returns a client; you can call `await db.connect({ url })` later. The factory throws lazily — only when a runtime is actually needed.
 
-The Mongo façade has the same construction shape — `import mongo from '@internal/mongo/runtime'` — and the same `db.connect(...)` / `db.close()` lifecycle methods. **The Mongo façade does not expose `db.transaction(...)`.** See *What Prisma 8 doesn't do yet* for the workaround. **The ORM surface differs in one place: keys.** On Mongo, `db.orm` is keyed by the collection's storage name (from `@@map(...)`, or the lowercased model name if no `@@map` is set), not by the PSL model name — so `model User { … @@map("users") }` is reached at `db.orm.users`, not `db.orm.public.User`. The SQL builder lane (`db.sql.<ns>.<table>`) doesn't exist on Mongo at all (`db.sql` is `undefined`). See `references/queries.md` § *MongoDB ORM addressing* for the full rule and a rewrite recipe for SQL-target examples.
+The Mongo façade has the same construction shape — `import mongo from '@internal/mongo/runtime'` — and the same `db.connect(...)` / `db.close()` lifecycle methods. **The Mongo façade does not expose `db.transaction(...)`.** See _What Prisma 8 doesn't do yet_ for the workaround. **The ORM surface differs in one place: keys.** On Mongo, `db.orm` is keyed by the collection's storage name (from `@@map(...)`, or the lowercased model name if no `@@map` is set), not by the PSL model name — so `model User { … @@map("users") }` is reached at `db.orm.users`, not `db.orm.public.User`. The SQL builder lane (`db.sql.<ns>.<table>`) doesn't exist on Mongo at all (`db.sql` is `undefined`). See `references/queries.md` § _MongoDB ORM addressing_ for the full rule and a rewrite recipe for SQL-target examples.
 
 ## Workflow — Running as a script (teardown)
 
@@ -73,9 +72,9 @@ The concept: short scripts that connect, query, then expect the process to exit 
 
 ```typescript
 // src/scripts/hello.ts
-import { db } from '../prisma/db';
+import { db } from "../prisma/db";
 
-const created = await db.orm.public.User.create({ email: 'alice@example.com', name: 'Alice' });
+const created = await db.orm.public.User.create({ email: "alice@example.com", name: "Alice" });
 const read = await db.orm.public.User.first();
 console.log({ created, read });
 
@@ -86,8 +85,8 @@ await db.close();
 
 ```typescript
 // src/scripts/hello.ts — top-level await in a script module
-import postgres from '@internal/postgres/runtime';
-import { contract } from '../prisma/db';
+import postgres from "@internal/postgres/runtime";
+import { contract } from "../prisma/db";
 
 await using db = postgres({ contract, url: process.env.DATABASE_URL! });
 
@@ -98,13 +97,13 @@ console.log(user);
 
 ### `await using` on a `postgres()` client is **block-scoped** — do not put it inside a request handler
 
-This rule is about the long-lived `postgres()` client. On a per-request runtime, `await using db = await postgres.connect({ url })` inside the handler is the correct pattern; see *Workflow — Serverless and per-request runtimes* below.
+This rule is about the long-lived `postgres()` client. On a per-request runtime, `await using db = await postgres.connect({ url })` inside the handler is the correct pattern; see _Workflow — Serverless and per-request runtimes_ below.
 
-This is the most important rule in this section. `await using db = postgres(...)` disposes when the *enclosing block* exits. In a script module, that block is the module body and disposal fires at process exit — fine. In a request handler, the enclosing block is the handler function, so disposal fires **after every request** — a fresh `pg.Pool` per call, TCP-connect storm, hot loop tearing connections up and down.
+This is the most important rule in this section. `await using db = postgres(...)` disposes when the _enclosing block_ exits. In a script module, that block is the module body and disposal fires at process exit — fine. In a request handler, the enclosing block is the handler function, so disposal fires **after every request** — a fresh `pg.Pool` per call, TCP-connect storm, hot loop tearing connections up and down.
 
 ```typescript
 // DO NOT do this — closes the pool after every request.
-app.get('/users', async (req, res) => {
+app.get("/users", async (req, res) => {
   await using db = postgres({ contract, url: process.env.DATABASE_URL! });
   const users = await db.orm.public.User.all();
   res.json(users);
@@ -118,9 +117,9 @@ The right server pattern is a **module-level singleton** in `db.ts`, imported by
 export const db = postgres({ contract, url: process.env.DATABASE_URL });
 
 // src/routes/users.ts
-import { db } from '../prisma/db';
+import { db } from "../prisma/db";
 
-app.get('/users', async (req, res) => {
+app.get("/users", async (req, res) => {
   const users = await db.orm.public.User.all();
   res.json(users);
 });
@@ -143,16 +142,16 @@ The concept: a per-request runtime (Cloudflare Workers + Hyperdrive, AWS Lambda,
 
 ```typescript
 // src/prisma/db.ts — the serverless client: module scope, built once per isolate, holds no database connection
-import postgresServerless from '@internal/postgres/serverless';
-import { contractFromJson } from '@internal/postgres/static';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import postgresServerless from "@internal/postgres/serverless";
+import { contractFromJson } from "@internal/postgres/static";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
 export const contract = contractFromJson<Contract>(contractJson);
 export const postgres = postgresServerless({ contract });
 
 // src/worker.ts
-import { postgres } from './prisma/db';
+import { postgres } from "./prisma/db";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -167,12 +166,12 @@ The rule to remember: inside a request, `db` does everything the `db` from `post
 
 - **`connect` connects before it returns.** When the database refuses the connection, rejects the credentials, or does not answer within 20 seconds, `postgres.connect({ url })` rejects with `DRIVER.CONNECTION_FAILED` and leaves nothing open; an empty URL, a string that is not a URL, or a scheme other than `postgres://` or `postgresql://` rejects with `RUNTIME.BINDING_INVALID`. Handle an unreachable database at the `connect` call, not at the first query. Answer a request that needs no query, such as an unknown route, before `connect`, because `connect` opens a database connection whether or not a query follows.
 - **Never call `connect` at module scope.** A connection opened there is shared by every request in the isolate, and fails in four ways: its database connection goes stale after the isolate idles, concurrent requests queue behind each other on one `pg.Client`, nothing closes it when a request ends, and Cloudflare Workers reject a socket used across requests.
-- **`db.orm` is the way to use the ORM.** For custom collection classes, pass `collections` to `postgresServerless({ contract, collections })` at module scope; every connection's `db.orm` and `tx.orm` then returns the classes. See *Workflow — Custom collection classes* in [`queries-postgres.md`](queries-postgres.md).
+- **`db.orm` is the way to use the ORM.** For custom collection classes, pass `collections` to `postgresServerless({ contract, collections })` at module scope; every connection's `db.orm` and `tx.orm` then returns the classes. See _Workflow — Custom collection classes_ in [`queries-postgres.md`](queries-postgres.md).
 - **Anything that takes a runtime gets `db.runtime()`.** That includes `withTransaction(runtime, fn)` and a prepared statement's `query(runtime, params)`. Do not pass `db` itself.
 - **Inside `db.transaction(async (tx) => ...)`, run every query through `tx`.** A connection has one database connection, so inside `db.transaction(async (tx) => ...)` a query through `db` is not independent of the transaction; run every query through `tx`. A query that uses the connection's database connection directly, such as a `db.orm` read, a `db.orm` create of one row, an `updateAll(...)` or `deleteAll()`, or `db.query(...)`, runs inside the open transaction without saying so. An operation that asks for a database connection of its own, such as a `db.orm` `update(...)` or `delete()` of one row, `db.runtime().connection()`, a `db.orm` create that also writes related rows, or a nested `db.transaction(...)`, waits for the database connection the transaction holds, and the request hangs.
 - **After `db.close()`** (or the end of the `await using` scope), `db.runtime()` throws `DRIVER.NOT_CONNECTED` ("Postgres connection is closed"), and ORM queries, `db.transaction(...)` and prepared statements that start after the runtime was idle for a turn reject with `DRIVER.NOT_CONNECTED` ("Runtime is closed"). Call `postgres.connect({ url })` again for a new connection.
 
-How connections read rows, and the `cursor` option on the serverless client (with the Hyperdrive caveat), is in `references/queries.md` § *Streaming*.
+How connections read rows, and the `cursor` option on the serverless client (with the Hyperdrive caveat), is in `references/queries.md` § _Streaming_.
 
 ## Workflow — Custom middleware (query log, slow-query warning)
 
@@ -185,24 +184,28 @@ The concept: the runtime runs every statement and every transaction as an **acti
 Every hook of one activity receives the same `ctx`. Keep per-statement state in `ctx.state(key)` (use a `Symbol()` key); `activity.id` identifies the activity, and `ctx.parent` is the enclosing transaction's context. There is no separate telemetry package — observe statements with `activityEnded`. The `SqlMiddleware` type comes from `@prisma/orm-postgres/family-runtime`. `examples/prisma-8-demo/src/prisma/slow-query-warning.ts` is the canonical example:
 
 ```typescript
-import type { SqlMiddleware } from '@prisma/orm-postgres/family-runtime';
+import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 
-const statementSql = Symbol('slow-query-warning.sql');
+const statementSql = Symbol("slow-query-warning.sql");
 
 export function slowQueryWarning(options?: { readonly thresholdMs?: number }): SqlMiddleware {
   const thresholdMs = options?.thresholdMs ?? 250;
   return {
-    name: 'slow-query-warning',
-    familyId: 'sql',
+    name: "slow-query-warning",
+    familyId: "sql",
     async beforeEncode(plan, ctx) {
-      ctx.state(statementSql)['sql'] = plan.sql;
+      ctx.state(statementSql)["sql"] = plan.sql;
     },
     async activityEnded(activity, result, ctx) {
-      if (result.kind !== 'statement' || result.latencyMs <= thresholdMs) return;
+      if (result.kind !== "statement" || result.latencyMs <= thresholdMs) return;
       ctx.log.warn({
-        code: 'APP.SLOW_QUERY',
+        code: "APP.SLOW_QUERY",
         message: `Query took ${result.latencyMs}ms (threshold: ${thresholdMs}ms)`,
-        details: { sql: ctx.state(statementSql)['sql'], source: result.source, activityId: activity.id },
+        details: {
+          sql: ctx.state(statementSql)["sql"],
+          source: result.source,
+          activityId: activity.id,
+        },
       });
     },
   };
@@ -218,25 +221,25 @@ The concept: lints catch authoring mistakes that survive type-check (e.g. `DELET
 Both are exported from the façade's `family-runtime` subpath — `@prisma/orm-postgres/family-runtime` (and `@prisma/orm-sqlite/family-runtime`, `@prisma/orm-mongo/family-runtime`). `examples/prisma-8-demo/src/prisma/db.ts` shows the canonical import.
 
 ```typescript
-import postgres from '@internal/postgres/runtime';
-import { contractFromJson } from '@internal/postgres/static';
-import { budgets, lints } from '@prisma/orm-postgres/family-runtime';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import postgres from "@internal/postgres/runtime";
+import { contractFromJson } from "@internal/postgres/static";
+import { budgets, lints } from "@prisma/orm-postgres/family-runtime";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
 export const contract = contractFromJson<Contract>(contractJson);
 
 export const db = postgres({
   contract,
-  url: process.env['DATABASE_URL'],
+  url: process.env["DATABASE_URL"],
   middleware: [
     lints({
       severities: {
-        selectStar: 'warn',
-        noLimit: 'error',
-        deleteWithoutWhere: 'error',
-        updateWithoutWhere: 'error',
-        readOnlyMutation: 'error',
+        selectStar: "warn",
+        noLimit: "error",
+        deleteWithoutWhere: "error",
+        updateWithoutWhere: "error",
+        readOnlyMutation: "error",
       },
     }),
     budgets({
@@ -244,7 +247,7 @@ export const db = postgres({
       defaultTableRows: 10_000,
       tableRows: { user: 10_000, post: 50_000 },
       maxLatencyMs: 1_000,
-      severities: { rowCount: 'error', latency: 'warn' },
+      severities: { rowCount: "error", latency: "warn" },
     }),
   ],
 });
@@ -264,30 +267,30 @@ import {
   createCacheMiddleware,
   createInMemoryCacheStore,
   invalidateAnnotation,
-} from '@prisma/orm-extension-middleware-cache';
+} from "@prisma/orm-extension-middleware-cache";
 
 export const cache = createCacheMiddleware({
   store: createInMemoryCacheStore({ maxEntries: 1_000, ttlMs: 60_000 }),
 });
 export const db = postgres({
   contract,
-  url: process.env['DATABASE_URL']!,
+  url: process.env["DATABASE_URL"]!,
   middleware: [cache, lints(), budgets({ maxRows: 10_000 })],
 });
 
 // Cached for the store's 60 s; an identical read in that window is served without a driver call.
 const user = await db.orm.public.User.first({ id: 1 }, (meta) =>
-  meta.annotate(cacheAnnotation({ key: 'user-1' })),
+  meta.annotate(cacheAnnotation({ key: "user-1" })),
 );
 // Un-annotated queries always hit the database.
 
 // The write invalidates 'user-1' once it has committed; inside db.transaction(fn), when that commits.
-await db.orm.public.User.where({ id: 1 }).update({ name: 'Alicia' }, (meta) =>
-  meta.annotate(invalidateAnnotation({ keys: ['user-1'] })),
+await db.orm.public.User.where({ id: 1 }).update({ name: "Alicia" }, (meta) =>
+  meta.annotate(invalidateAnnotation({ keys: ["user-1"] })),
 );
 
 // Or, after a write to user 1 has committed (outside the transaction, never inside it):
-await cache.invalidate({ keys: ['user-1'] });
+await cache.invalidate({ keys: ["user-1"] });
 ```
 
 **Invalidate after the commit, not inside the transaction.** `invalidateAnnotation` waits for the commit on its own; a manual `invalidate` must be called after it. A read from another request can refill the cache with the old rows before the commit lands. A read that missed before the `invalidate` and finishes after it does not store its rows: the store moves the key's version on `unset`, and the read's `set` is conditional on the version it saw. This holds across processes that share a store.
@@ -309,13 +312,13 @@ Order matters: `beforeEncode` runs in registration order for every middleware be
 
 ## Workflow — Configure the connection
 
-The concept: the runtime takes one of three binding shapes — `url`, `pg` (a pre-constructed `pg.Pool` or `pg.Client`), or `binding` (an explicit kind tag). They're mutually exclusive. The `pg` form is for projects that already manage their own pool (e.g. a Lambda layer); `url` is the default. Pool tuning is `poolOptions.connectionTimeoutMillis` / `poolOptions.idleTimeoutMillis` — *not* `driverOptions`. Reads are buffered by default; setting `cursor` (`{ batchSize: 100 }`; `{}` or `{ batchSize: undefined }` for batches of 100; a `batchSize` that is not a positive integer fails the factory call) makes them stream through a server-side cursor, and there is no flag that turns cursors off (see `references/queries.md` § *Streaming*). `postgresServerless()` takes the same `cursor` option. Pass `log` (an object with `info`, `warn`, `error` and an optional `debug`; `console` works, and the type is `Log` from `@prisma/orm-postgres/family-runtime`) to receive what the runtime logs: the marker-verification warnings `CONTRACT.MARKER_MISSING` and `CONTRACT.MARKER_MISMATCH` from the first query, the warnings `lints()` emits for rules whose severity is `warn`, and the errors a middleware's `activityEnded` or `activityFinalized` hook throws, which the runtime logs and swallows. If `log` has a `debug` method, it also receives debug events, for example when a middleware intercepts a statement. `budgets()` violations reach `log` only in `mode: 'permissive'` (see *Lints and budgets middleware*). Without `log`, the runtime drops these events. `postgresServerless()`, `sqlite()` and `supabase()` take the same option.
+The concept: the runtime takes one of three binding shapes — `url`, `pg` (a pre-constructed `pg.Pool` or `pg.Client`), or `binding` (an explicit kind tag). They're mutually exclusive. The `pg` form is for projects that already manage their own pool (e.g. a Lambda layer); `url` is the default. Pool tuning is `poolOptions.connectionTimeoutMillis` / `poolOptions.idleTimeoutMillis` — _not_ `driverOptions`. Reads are buffered by default; setting `cursor` (`{ batchSize: 100 }`; `{}` or `{ batchSize: undefined }` for batches of 100; a `batchSize` that is not a positive integer fails the factory call) makes them stream through a server-side cursor, and there is no flag that turns cursors off (see `references/queries.md` § _Streaming_). `postgresServerless()` takes the same `cursor` option. Pass `log` (an object with `info`, `warn`, `error` and an optional `debug`; `console` works, and the type is `Log` from `@prisma/orm-postgres/family-runtime`) to receive what the runtime logs: the marker-verification warnings `CONTRACT.MARKER_MISSING` and `CONTRACT.MARKER_MISMATCH` from the first query, the warnings `lints()` emits for rules whose severity is `warn`, and the errors a middleware's `activityEnded` or `activityFinalized` hook throws, which the runtime logs and swallows. If `log` has a `debug` method, it also receives debug events, for example when a middleware intercepts a statement. `budgets()` violations reach `log` only in `mode: 'permissive'` (see _Lints and budgets middleware_). Without `log`, the runtime drops these events. `postgresServerless()`, `sqlite()` and `supabase()` take the same option.
 
 ```typescript
 // Default — URL string, factory constructs the pool.
 postgres({
   contract,
-  url: process.env['DATABASE_URL'],
+  url: process.env["DATABASE_URL"],
   poolOptions: {
     connectionTimeoutMillis: 20_000,
     idleTimeoutMillis: 30_000,
@@ -325,8 +328,8 @@ postgres({
 });
 
 // BYO pool — pass a pg.Pool you already created.
-import { Pool } from 'pg';
-const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+import { Pool } from "pg";
+const pool = new Pool({ connectionString: process.env["DATABASE_URL"] });
 postgres({ contract, pg: pool });
 ```
 
@@ -339,16 +342,16 @@ The `url` and `pg` keys are mutually exclusive at the type level; passing both e
 The concept: one `DATABASE_URL` per environment; the rest of the `db.ts` shape is the same. For middleware divergence (e.g. strict lints in dev only), branch in `db.ts` on `process.env['NODE_ENV']`.
 
 ```typescript
-const isProd = process.env['NODE_ENV'] === 'production';
+const isProd = process.env["NODE_ENV"] === "production";
 
 export const db = postgres({
   contract,
-  url: process.env['DATABASE_URL']!,
+  url: process.env["DATABASE_URL"]!,
   middleware: isProd
     ? [slowQueryWarning({ thresholdMs: 250 })]
     : [
         slowQueryWarning({ thresholdMs: 250 }),
-        lints({ severities: { noLimit: 'error', deleteWithoutWhere: 'error' } }),
+        lints({ severities: { noLimit: "error", deleteWithoutWhere: "error" } }),
       ],
 });
 ```
@@ -361,8 +364,8 @@ The concept applies to **Postgres, SQLite and Supabase**. `db.transaction(fn)` o
 
 ```typescript
 await db.transaction(async (tx) => {
-  const user = await tx.orm.public.User.create({ email: 'alice@example.com' });
-  await tx.orm.public.Post.create({ userId: user.id, title: 'hello' });
+  const user = await tx.orm.public.User.create({ email: "alice@example.com" });
+  await tx.orm.public.Post.create({ userId: user.id, title: "hello" });
   // If either call throws, both inserts roll back.
 });
 ```
@@ -372,9 +375,14 @@ The callback returns whatever you return from it — the transaction wrapper pas
 ```typescript
 await db.transaction(async (tx) => {
   const posts = await tx.orm.public.Post.published().forUpdate().all();
-  await tx.execute(tx.raw.sql`UPDATE post SET pinned = false WHERE id = ${posts[0]!.id}`.affectedCount().build());
-  const byId = await tx.prepare({ id: 'pg/int4@1' }, (params) =>
-    tx.sql.public.post.select('id').where((f, fns) => fns.eq(f.id, params.id)).build(),
+  await tx.execute(
+    tx.raw.sql`UPDATE post SET pinned = false WHERE id = ${posts[0]!.id}`.affectedCount().build(),
+  );
+  const byId = await tx.prepare({ id: "pg/int4@1" }, (params) =>
+    tx.sql.public.post
+      .select("id")
+      .where((f, fns) => fns.eq(f.id, params.id))
+      .build(),
   );
   await byId.query(tx, { id: 1 });
 });
@@ -390,26 +398,26 @@ After the switch (Mongo):
 
 ```typescript
 // src/prisma/db.ts (Mongo)
-import mongo from '@internal/mongo/runtime';
-import { contractFromJson } from '@internal/mongo/static';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import mongo from "@internal/mongo/runtime";
+import { contractFromJson } from "@internal/mongo/static";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
 export const contract = contractFromJson<Contract>(contractJson);
-export const db = mongo({ contract, url: process.env['DATABASE_URL'] });
+export const db = mongo({ contract, url: process.env["DATABASE_URL"] });
 ```
 
 SQLite:
 
 ```typescript
 // src/prisma/db.ts (SQLite)
-import sqlite from '@internal/sqlite/runtime';
-import { contractFromJson } from '@internal/sqlite/static';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import sqlite from "@internal/sqlite/runtime";
+import { contractFromJson } from "@internal/sqlite/static";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
 export const contract = contractFromJson<Contract>(contractJson);
-export const db = sqlite({ contract, path: 'app.db' });
+export const db = sqlite({ contract, path: "app.db" });
 ```
 
 `path` is optional at construct time (you can call `db.connect({ path })` later); omit it and the façade still returns a client. The SQLite façade exposes the same `db.sql`, `db.orm`, `db.raw`, `db.prepare(...)`, `db.transaction(...)`, `db.close()`, and `[Symbol.asyncDispose]` surfaces as Postgres, with one addressing difference: SQLite has no schemas, so `db.sql` and `db.orm` are the unbound namespace itself (`db.orm.User`, `db.sql.user`) instead of Postgres's `db.orm.public.User` / `db.sql.public.user`. `db.orm` and `tx.orm` also offer `fragment` beside the models, unless a model is named `fragment`: `const titled = db.orm.fragment({ title: { codecId: 'sqlite/text@1', nullable: false } }, (rows) => rows.where((r) => r.title.eq('Hello')));` then `await db.orm.Post.with(titled).all();`. The Mongo façade shares `db.orm`, `db.close()`, and `[Symbol.asyncDispose]` but has no `db.sql` and no `db.transaction(...)`.
@@ -434,14 +442,14 @@ The runtime side (this skill) is the same regardless: `db.ts` reads `contract.js
 5. **Importing middleware from a non-existent package or subpath.** There is no `@internal/postgres/middleware` subpath and no `@internal/middleware-telemetry` package. `lints` / `budgets` / `SqlMiddleware` come from `@prisma/orm-postgres/family-runtime`; the cache comes from `@prisma/orm-extension-middleware-cache`; a query log or telemetry hook is a custom `activityEnded` middleware (above).
 6. **Confabulating lint / budget option names.** Lints take `severities` (with the five keys above), not `requireWhere` / `maxRowsWithoutLimit`. Budgets use `maxLatencyMs` (not `maxDurationMs`) plus `maxRows` / `defaultTableRows` / `tableRows`. When in doubt, read the source.
 7. **Switching targets without re-emitting.** The contract artefacts are target-shaped; emit after the target change.
-8. **Script hangs after queries finish on Postgres.** The `pg.Pool` keeps Node's event loop alive. Solution: `await db.close()` before the script returns, or `await using db = postgres({ contract, ... })` at the top of a script module. Do not put `await using db = postgres(...)` inside a request handler — it's block-scoped and would close the pool after every request. The right server pattern is a module-level singleton in `db.ts` that lives for the process lifetime. On a per-request runtime, use `postgresServerless()` and `await using db = await postgres.connect({ url })` in the handler instead (see *Workflow — Serverless and per-request runtimes*).
+8. **Script hangs after queries finish on Postgres.** The `pg.Pool` keeps Node's event loop alive. Solution: `await db.close()` before the script returns, or `await using db = postgres({ contract, ... })` at the top of a script module. Do not put `await using db = postgres(...)` inside a request handler — it's block-scoped and would close the pool after every request. The right server pattern is a module-level singleton in `db.ts` that lives for the process lifetime. On a per-request runtime, use `postgresServerless()` and `await using db = await postgres.connect({ url })` in the handler instead (see _Workflow — Serverless and per-request runtimes_).
 
 ## What Prisma 8 doesn't do yet
 
 - **A `/middleware` subpath or a telemetry package.** Neither exists. The middleware surface is `lints`, `budgets`, and the `SqlMiddleware` type on `@prisma/orm-postgres/family-runtime`, plus the separately installed `@prisma/orm-extension-middleware-cache`. Anything else (query log, tracing spans, metrics) is a custom middleware you write on the lifecycle events. File additional gaps you hit via `references/feedback.md`.
 - **Multi-database routing / read replicas.** Prisma 8 doesn't ship a built-in primary/replica router or shard-aware client. Workaround: configure separate `db.ts` instances per data store and call the right one in your application code. If you need first-class multi-database routing, file a feature request via the `references/feedback.md` skill.
 - **Connection pooling as a first-class config field.** `poolOptions.connectionTimeoutMillis` and `poolOptions.idleTimeoutMillis` are wired through, but the rest of `pg.Pool`'s tuning surface (max connections, `allowExitOnIdle`, ssl options, …) is not exposed by name. Workaround: construct the `pg.Pool` yourself and pass it via `pg:`. If you need more pool fields surfaced on the façade, file a feature request via the `references/feedback.md` skill.
-- **Query logger middleware as a built-in.** Prisma 8 doesn't ship a "log every query" middleware. Workaround: a custom `activityEnded` middleware (see *Workflow — Custom middleware*). If you need a built-in query log, file a feature request via the `references/feedback.md` skill.
+- **Query logger middleware as a built-in.** Prisma 8 doesn't ship a "log every query" middleware. Workaround: a custom `activityEnded` middleware (see _Workflow — Custom middleware_). If you need a built-in query log, file a feature request via the `references/feedback.md` skill.
 
 ## Reference Files
 
@@ -459,5 +467,5 @@ This skill is intentionally body-only; `prisma orm init --help`, the target `def
 - [ ] Did NOT hardcode credentials in any committed file.
 - [ ] Did NOT confabulate a `@internal/postgres/middleware` subpath, a `@internal/middleware-telemetry` package, a `@internal/postgres-extension-audit` package, or a type argument or `contractJson` option on `postgres(...)`.
 - [ ] Did NOT claim `db.transaction(...)` exists on the Mongo façade — only Postgres, SQLite and Supabase role-bound clients expose it.
-- [ ] Did NOT confabulate read-replica / multi-DB / extra pool config — pointed at *What Prisma 8 doesn't do yet* and routed to `references/feedback.md`.
+- [ ] Did NOT confabulate read-replica / multi-DB / extra pool config — pointed at _What Prisma 8 doesn't do yet_ and routed to `references/feedback.md`.
 - [ ] For build-system / dev-server prompts (Vite plugin, Next.js plugin, …) routed to `references/build.md`.

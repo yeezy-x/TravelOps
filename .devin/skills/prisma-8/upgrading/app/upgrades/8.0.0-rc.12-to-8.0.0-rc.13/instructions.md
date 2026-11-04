@@ -126,13 +126,14 @@ A contract with generated defaults (`temporal.createdAt()`, `temporal.updatedAt(
    The script reads every `.json` and `.d.ts` file under a `migrations/` directory, skipping `node_modules`, `.git` and `dist`, and changes only `execution.mutations.defaults[].ref` entries. In each one it renames `table` to `entry` and `column` to `field`, and writes the keys in the order `entry`, `field`, `namespace`, which is the order `prisma contract emit` writes. The old key order varies between files: older `contract.d.ts` files list `namespace`, `table`, `column`, newer ones `column`, `namespace`, `table`. The script handles any order; a hand edit or a search-and-replace that assumes one order misses some refs. A `contract.json` in canonical form stays canonical, so a snapshot matches a fresh emit apart from `executionHash`; an indented JSON file keeps its indentation. The script leaves every `executionHash` as it is. That hash no longer matches the renamed content, but the snapshot loader re-hashes only the storage section, so nothing checks it. `storageHash` and `profileHash` do not move, so snapshot directory names stay the same. A second run changes nothing. Pass `--check` to list the files it would change without writing them; it exits 1 if any would change. A `.json` file it cannot parse is listed as `NOT JSON` and also makes it exit 1.
 
    To confirm the rewrite, name one migration directory under `migrations/app/` as both ends of a plan: `prisma migration plan --from <dir> --to <dir>`. It loads that migration's snapshot without touching the database. Before the rewrite it fails with `CONTRACT.VALIDATION_FAILED` and `execution.mutations.defaults[0].ref.entry must be a string`; after the rewrite it prints `No changes detected` and writes no migration. In a project with extensions it also re-pins their files under `migrations/<space-id>/`, as every `migration plan` does. `prisma db migrate --to <hash>` does not confirm it: it applies migrations, and on a database already past that snapshot it has no route back, so it fails either way. `prisma migration check` and `prisma db verify` never validate an app snapshot's `execution` section, so they pass before and after the rewrite.
+
 3. Code that reads the section directly changes `.ref.table` to `.ref.entry` and `.ref.column` to `.ref.field`.
 
 `executionHash` changes for every contract with generated defaults, because the canonical JSON changes. Nothing compares it against the database, so no migration or re-sign is needed.
 
 ## `ts-defaults-encoded-by-codec`
 
-A TypeScript contract used to store the value passed to `.default(value)` as it stood. The column's codec now encodes it, so the value must be the codec's input type. For a field built inside the `defineContract` factory, `.default()` is typed with that input type, so a wrong value is a type error in `contract.ts`. PSL contracts, `.default(now())`, `.default(autoincrement())` and `` .default(sql`...`) `` are not affected.
+A TypeScript contract used to store the value passed to `.default(value)` as it stood. The column's codec now encodes it, so the value must be the codec's input type. For a field built inside the `defineContract` factory, `.default()` is typed with that input type, so a wrong value is a type error in `contract.ts`. PSL contracts, `.default(now())`, `.default(autoincrement())` and ``.default(sql`...`)`` are not affected.
 
 What now fails, on Postgres:
 
@@ -149,11 +150,11 @@ CONTRACT.DEFAULT_INVALID: Field "Event.createdAt" has a default that its codec r
 2. Type-check the contract file, then run `prisma contract emit`. TypeScript reports a default of the wrong type; the emit reports each default the codec refuses, with its model and field.
 3. For each one, either pass the codec's type or change the preset:
 
-| You have | Write |
-| --- | --- |
-| an ISO 8601 string | `field.temporal.timestamptzString().default('2024-01-01T00:00:00Z')` |
-| a JavaScript `Date` | `field.temporal.timestamptzJsDate().default(new Date('2024-01-01T00:00:00Z'))` |
-| a `Temporal.Instant` | `field.dateTime().default(Temporal.Instant.from('2024-01-01T00:00:00Z'))` |
+| You have             | Write                                                                          |
+| -------------------- | ------------------------------------------------------------------------------ |
+| an ISO 8601 string   | `field.temporal.timestamptzString().default('2024-01-01T00:00:00Z')`           |
+| a JavaScript `Date`  | `field.temporal.timestamptzJsDate().default(new Date('2024-01-01T00:00:00Z'))` |
+| a `Temporal.Instant` | `field.dateTime().default(Temporal.Instant.from('2024-01-01T00:00:00Z'))`      |
 
 Changing the preset changes the column's codec, and so the type your queries read and write for that field. On Postgres, `field.bigint()` takes a `bigint` and `field.bytes()` takes a `Uint8Array`. On SQLite, `field.temporal.datetime()` takes a `Date`, `field.column(bigintColumn)` takes a `bigint` and `field.column(blobColumn)` takes a `Uint8Array`.
 
@@ -165,11 +166,11 @@ A JavaScript `number` on a `bigint` field (codec `pg/int8@1`), such as `field.bi
 
 A default that gets past the type check, for example from an untyped caller, is stored in a different form than before:
 
-| Default | Stored before | Stored now |
-| --- | --- | --- |
-| `field.bigint().default(1)` (also SQLite `bigintColumn`) | `1` | `"1"` |
-| `field.bytes().default('x')` | `"x"` | `"eA=="` (base64) |
-| SQLite `blobColumn` with `.default('x')` | `"x"` | `"78"` (hex) |
+| Default                                                  | Stored before | Stored now        |
+| -------------------------------------------------------- | ------------- | ----------------- |
+| `field.bigint().default(1)` (also SQLite `bigintColumn`) | `1`           | `"1"`             |
+| `field.bytes().default('x')`                             | `"x"`         | `"eA=="` (base64) |
+| SQLite `blobColumn` with `.default('x')`                 | `"x"`         | `"78"` (hex)      |
 
 A contract with such a default emits a different `contract.json` and a different storage hash. Re-emit the contract and review the diff of `contract.json`.
 
@@ -207,8 +208,7 @@ For each `.cursor(` call on a `db.orm` chain that also calls `.orderBy(`, look a
 - Paginate with `.limit(n).offset(n)` and remove `.cursor(...)`:
 
   ```ts
-  const page = await db.orm.public.Post
-    .orderBy((p) => p.embedding.cosineDistance(v).asc())
+  const page = await db.orm.public.Post.orderBy((p) => p.embedding.cosineDistance(v).asc())
     .limit(20)
     .offset(pageIndex * 20)
     .all();
@@ -222,12 +222,12 @@ For each `.cursor(` call on a `db.orm` chain that also calls `.orderBy(`, look a
 
 The Mongo target package owns the codecs now. Rewrite each specifier, in every file that names it (source, emitted `contract.d.ts`, the `contract.d.ts` in each `migrations/snapshots/<hash>/` directory, and docs):
 
-| Before | After |
-| --- | --- |
-| `@prisma/orm-mongo/adapter/codec-types` | `@prisma/orm-mongo/target/codec-types` |
-| `@prisma/orm-mongo/adapter/codecs` | `@prisma/orm-mongo/target/codecs` |
-| `@prisma/orm-mongo/adapter/codec-ids` | `@prisma/orm-mongo/target/codec-ids` |
-| `@prisma/orm-mongo/adapter/data-types` | `@prisma/orm-mongo/target/data-types` |
+| Before                                         | After                                         |
+| ---------------------------------------------- | --------------------------------------------- |
+| `@prisma/orm-mongo/adapter/codec-types`        | `@prisma/orm-mongo/target/codec-types`        |
+| `@prisma/orm-mongo/adapter/codecs`             | `@prisma/orm-mongo/target/codecs`             |
+| `@prisma/orm-mongo/adapter/codec-ids`          | `@prisma/orm-mongo/target/codec-ids`          |
+| `@prisma/orm-mongo/adapter/data-types`         | `@prisma/orm-mongo/target/data-types`         |
 | `@prisma/orm-target-mongo/adapter/<same four>` | `@prisma/orm-target-mongo/target/<same four>` |
 
 The exported names are unchanged. For the application's own `contract.d.ts`, running `prisma contract emit` produces the same result as the rewrite. Snapshot `contract.d.ts` files under `migrations/snapshots/` are not re-emitted, so rewrite them. The contract JSON and every hash stay the same.
@@ -238,14 +238,14 @@ Do not rely on `tsc` to find the `contract.d.ts` files. They are declaration fil
 
 ```ts
 // before
-import { createMongoRunnerDeps, extractDb } from '@prisma/orm-mongo/adapter/control';
-import { MongoDriverImpl } from '@prisma/orm-mongo/driver';
+import { createMongoRunnerDeps, extractDb } from "@prisma/orm-mongo/adapter/control";
+import { MongoDriverImpl } from "@prisma/orm-mongo/driver";
 const runner = new MongoMigrationRunner(
   createMongoRunnerDeps(controlDriver, MongoDriverImpl.fromDb(extractDb(controlDriver)), family),
 );
 
 // after
-import { MongoControlAdapterImpl } from '@prisma/orm-mongo/adapter/control';
+import { MongoControlAdapterImpl } from "@prisma/orm-mongo/adapter/control";
 const runner = new MongoMigrationRunner(
   new MongoControlAdapterImpl().createRunnerDependencies(controlDriver),
 );
@@ -262,13 +262,17 @@ Change the import of `MongoRunnerDependencies` or `MarkerOperations` to `@prisma
 Build the family instance from a control stack that includes the Mongo adapter:
 
 ```ts
-import mongoAdapter from '@prisma/orm-mongo/adapter/control';
-import { createMongoFamilyInstance, mongoFamilyDescriptor } from '@prisma/orm-mongo/family/control';
-import { createControlStack } from '@prisma/orm-mongo/components/control';
-import { mongoTargetDescriptor } from '@prisma/orm-mongo/target/control';
+import mongoAdapter from "@prisma/orm-mongo/adapter/control";
+import { createMongoFamilyInstance, mongoFamilyDescriptor } from "@prisma/orm-mongo/family/control";
+import { createControlStack } from "@prisma/orm-mongo/components/control";
+import { mongoTargetDescriptor } from "@prisma/orm-mongo/target/control";
 
 const family = createMongoFamilyInstance(
-  createControlStack({ family: mongoFamilyDescriptor, target: mongoTargetDescriptor, adapter: mongoAdapter }),
+  createControlStack({
+    family: mongoFamilyDescriptor,
+    target: mongoTargetDescriptor,
+    adapter: mongoAdapter,
+  }),
 );
 ```
 
@@ -284,12 +288,12 @@ Never rename in a Prisma 6 `schema.prisma`, such as one kept beside the Prisma 8
 
 In each field whose type is one of the deprecated names, replace the type name, keeping any `[]` and `?`:
 
-| Deprecated | Use | Stored as |
-| --- | --- | --- |
-| `Int` | `Int32` | BSON int |
-| `Float` | `Double` | BSON double |
-| `Boolean` | `Bool` | BSON bool |
-| `DateTime` | `Date` | BSON date |
+| Deprecated | Use      | Stored as   |
+| ---------- | -------- | ----------- |
+| `Int`      | `Int32`  | BSON int    |
+| `Float`    | `Double` | BSON double |
+| `Boolean`  | `Bool`   | BSON bool   |
+| `DateTime` | `Date`   | BSON date   |
 
 ```prisma
 // before

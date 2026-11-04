@@ -112,7 +112,7 @@ changes:
       glob: "**/*.{ts,mts,cts,tsx,js,mjs,cjs,json}"
       matches:
         - 'Expected one of: 4 \| 7'
-        - 'Expected an integer between 2 and 255'
+        - "Expected an integer between 2 and 255"
         - 'Attribute \\?"(?:uuid|cuid|nanoid|ulid|ksuid|now|autoincrement)\\?"'
   - id: generator-function-argument-with-fraction
     summary: |
@@ -219,7 +219,7 @@ changes:
         - 'import\s*(?:type\s*)?(?:[\w$]+\s*,\s*)?\{[^}]*(?<![\w$])(?:PostgresClient|PostgresServerlessClient|PostgresServerlessConnection|PostgresStaticContext|PostgresStaticMembers|SqliteClient|SqliteStaticContext|RoleBoundDb|ServiceRoleDb|SupabaseInternalDb|PostgresTransactionContext|SqliteTransactionContext)(?![\w$])[^}]*\}\s*from\s*[''"]@prisma/orm-'
         - '\.runtime\(\)\s*\.(?:query|execute)\('
         - '(?<![\w$])(?:runtimeTarget|runtimeStorageHash)\s*:|\.(?:runtimeTarget|runtimeStorageHash)\b|[''"](?:runtimeTarget|runtimeStorageHash)[''"]'
-        - 'Ad-hoc execute received a bind-site slot|Plan target does not match runtime target|Plan storage hash does not match runtime contract'
+        - "Ad-hoc execute received a bind-site slot|Plan target does not match runtime target|Plan storage hash does not match runtime contract"
   - id: orm-collection-member-using-reserved
     summary: |
       Every ORM collection has a `using` member, which holds the collection methods packages contribute for the model, such as `db.orm.public.Post.using.post_search(q)` for a Postgres full-text index. A custom collection class that declares its own member named `using` no longer compiles; rename that member. The detection matches a file that extends `Collection` and declares a class member named `using`.
@@ -249,7 +249,7 @@ changes:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
         - '\bCachedRows\b'
-        - 'createInMemoryCacheStore<[^>(]*,'
+        - "createInMemoryCacheStore<[^>(]*,"
         - '(?<![\s\S])(?![\s\S]*\bCachedValue\b)(?=[\s\S]*[''"](?:@prisma/orm-extension-middleware-cache|@internal/middleware-cache)[''"])[\s\S]*(?<![\w$])(?:CacheStore|CacheEntry)(?![\w$])'
   - id: orm-needs-a-runtime-queryable
     summary: |
@@ -264,7 +264,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
-        - 'Runtime is closed|Postgres client is closed'
+        - "Runtime is closed|Postgres client is closed"
   - id: typescript-contract-include-row-types
     summary: |
       A contract built with `defineContract` from TypeScript now types each relation with its target model, namespace and cardinality, as an emitted `contract.d.ts` does. Rows from `include(...)`, which were typed `unknown` and always as an array, now have the target model's field types: a has-many or many-to-many relation is an array, a belongs-to relation is one row (or `null` when optional), and a has-one relation is one row or `null`. A cast on an included value that disagrees with this type now fails to typecheck. The detection matches a file that imports `defineContract` from a SQL contract builder; the change matters only where code queries through the contract it builds without an emitted `contract.d.ts`.
@@ -319,7 +319,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
-        - 'enumAccessors'
+        - "enumAccessors"
   - id: emitted-contract-types-from-generics
     summary: |
       `prisma contract emit` now writes the field and storage column type maps of a SQL contract (`FieldOutputTypes`, `FieldInputTypes`, `StorageColumnTypes`, `StorageColumnInputTypes`) as generics applied to the contract's own shape, the ones a contract built with `defineContract` uses, with only the types a codec computes at emit time written out (`FieldTypeOverrides`, `ColumnTypeOverrides`). A column with type parameters is typed through the pack's type function (`ParameterizedOutputTypeFunctions`) instead of a named type such as `Char<24>`; it resolves to the same type. `Models` members index `FieldOutputTypes`. The types do not change; re-emit to update the committed `contract.d.ts`. The extension metadata in `contract.json` changes too: a pack's codec types name their `parameterizedOutputTypes` instead of `typeImports` such as `Vector`. Migration snapshots keep the form they were written in and need no change. The detection matches a SQL `contract.d.ts` emitted before this change; Mongo contracts never have `StorageColumnTypes`. It also matches the `contract.d.ts` of each migration snapshot (`migrations/snapshots/<hash>/`); leave those as they are.
@@ -406,7 +406,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts}"
       matches:
-        - '@prisma/orm-(?:mongo/contract-builder|family-mongo/contract-ts/contract-builder)'
+        - "@prisma/orm-(?:mongo/contract-builder|family-mongo/contract-ts/contract-builder)"
   - id: mongo-shared-collection-validator
     summary: |
       A MongoDB collection that stores several models that are not variants of one base, such as two PSL models with the same `@@map`, now gets a validator that accepts a document of any of them. Before, the validator described only the last model and refused the other models' documents. Re-emit the contract and apply the new validator with `prisma db update`, or with `prisma migration plan` and `prisma db migrate`.
@@ -841,12 +841,12 @@ Then run `prisma contract emit` and `prisma db sign`.
 
 A codec now reads each value a query returns with one method, `fromWire`, in a plain read and in an include alike, and refuses a value its column's type does not hold. A query that returned such a value before now throws `RUNTIME.DECODE_FAILED`:
 
-| Column | Value | Message |
-| --- | --- | --- |
-| SQLite `INTEGER` (`sqlite/integer@1`, `sql/int@1`) | text that is not a number, or bytes | `sqlite/integer@1 wire value must be an integer or its decimal text` |
-| SQLite `REAL` (`sqlite/real@1`, `sql/float@1`) | text other than `Infinity` and `-Infinity`, or bytes | `sqlite/real@1 wire value must be a number, or the text Infinity or -Infinity` |
-| SQLite `BLOB` (`sqlite/blob@1`) | text or a number | `sqlite/blob@1 wire value must be bytes, or the array of their hex text an include carries` |
-| PostgreSQL `text[]` (`pg/text-array@1`) | an array of two or more dimensions | `pg/text-array@1 reads a one-dimensional text[], and {{a},{b}} has more dimensions` |
+| Column                                             | Value                                                | Message                                                                                     |
+| -------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| SQLite `INTEGER` (`sqlite/integer@1`, `sql/int@1`) | text that is not a number, or bytes                  | `sqlite/integer@1 wire value must be an integer or its decimal text`                        |
+| SQLite `REAL` (`sqlite/real@1`, `sql/float@1`)     | text other than `Infinity` and `-Infinity`, or bytes | `sqlite/real@1 wire value must be a number, or the text Infinity or -Infinity`              |
+| SQLite `BLOB` (`sqlite/blob@1`)                    | text or a number                                     | `sqlite/blob@1 wire value must be bytes, or the array of their hex text an include carries` |
+| PostgreSQL `text[]` (`pg/text-array@1`)            | an array of two or more dimensions                   | `pg/text-array@1 reads a one-dimensional text[], and {{a},{b}} has more dimensions`         |
 
 SQLite stores any value in any column of a table that is not `STRICT`, so these values come from writes outside the application. Find them, for example with `SELECT id FROM t WHERE typeof(col) NOT IN ('integer', 'null')`, and correct them, or read the column with a codec of the type it holds.
 
@@ -919,7 +919,7 @@ The contract does not change: `@onCreate(uuid())` lowers to the generator `@defa
 In a TypeScript contract, `field.generated(...)` keeps working for now. Its replacement is `.onCreate(...)` with a call from `gen`, which this release adds:
 
 ```ts
-import { field, gen } from '@prisma/orm-postgres/contract-builder';
+import { field, gen } from "@prisma/orm-postgres/contract-builder";
 
 const id = field.column(textColumn).id().onCreate(gen.uuid(7));
 const updatedAt = field.column(timestamptzColumn).onCreate(gen.now()).onUpdate(gen.now());
@@ -959,12 +959,15 @@ Code or tests that match the diagnostics of a Prisma 8 schema read the new code 
 
 ```ts
 // Before
-expect(diagnostic).toMatchObject({ code: 'PSL_INVALID_ATTRIBUTE_SYNTAX', message: 'Expected one of: 4 | 7' });
+expect(diagnostic).toMatchObject({
+  code: "PSL_INVALID_ATTRIBUTE_SYNTAX",
+  message: "Expected one of: 4 | 7",
+});
 
 // After
 expect(diagnostic).toMatchObject({
-  code: 'PSL_INVALID_GENERATOR_ARGUMENT',
-  message: 'uuid: version must be 4 or 7, got 5',
+  code: "PSL_INVALID_GENERATOR_ARGUMENT",
+  message: "uuid: version must be 4 or 7, got 5",
 });
 ```
 
@@ -1001,10 +1004,10 @@ This applies to SQL schemas only; a Mongo schema's discriminator message is unch
 
 ```ts
 // Before
-'Discriminator field "type" on model "Task" must be of type String, but is "Int"'
+'Discriminator field "type" on model "Task" must be of type String, but is "Int"';
 
 // After
-'Discriminator field "type" on model "Task" must be text, such as String, but is "Int"'
+'Discriminator field "type" on model "Task" must be text, such as String, but is "Int"';
 ```
 
 ## Re-emit contracts that use a string timestamp preset
@@ -1023,10 +1026,10 @@ This is `string-timestamp-codecs-take-text-only`.
 
 ```ts
 // Before: compiles only through a cast, and was converted at runtime
-await db.orm.public.Post.create({ title: 'Hello', publishedAt: new Date() as unknown as string });
+await db.orm.public.Post.create({ title: "Hello", publishedAt: new Date() as unknown as string });
 
 // After
-await db.orm.public.Post.create({ title: 'Hello', publishedAt: new Date().toISOString() });
+await db.orm.public.Post.create({ title: "Hello", publishedAt: new Date().toISOString() });
 ```
 
 A direct call of the codec's `encode` with a `Date` is now a type error as well.
@@ -1125,10 +1128,10 @@ Code that reads the column's type from a `CONTRACT.DEFAULT_INVALID` error reads 
 
 ```ts
 // Before
-if (error.code === 'CONTRACT.DEFAULT_INVALID') console.log(error.meta.nativeType);
+if (error.code === "CONTRACT.DEFAULT_INVALID") console.log(error.meta.nativeType);
 
 // After
-if (error.code === 'CONTRACT.DEFAULT_INVALID') console.log(error.meta.typeText);
+if (error.code === "CONTRACT.DEFAULT_INVALID") console.log(error.meta.typeText);
 ```
 
 ## A client takes a typed contract value
@@ -1137,21 +1140,21 @@ A client no longer takes `contractJson`, and it needs no type argument. The emit
 
 ```ts
 // Before
-import postgres from '@prisma/orm-postgres/runtime';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import postgres from "@prisma/orm-postgres/runtime";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
-export const db = postgres<Contract>({ contractJson, url: process.env['DATABASE_URL']! });
+export const db = postgres<Contract>({ contractJson, url: process.env["DATABASE_URL"]! });
 
 // After
-import postgres from '@prisma/orm-postgres/runtime';
-import { contractFromJson } from '@prisma/orm-postgres/static';
-import type { Contract } from './contract.d';
-import contractJson from './contract.json' with { type: 'json' };
+import postgres from "@prisma/orm-postgres/runtime";
+import { contractFromJson } from "@prisma/orm-postgres/static";
+import type { Contract } from "./contract.d";
+import contractJson from "./contract.json" with { type: "json" };
 
 export const contract = contractFromJson<Contract>(contractJson);
 
-export const db = postgres({ contract, url: process.env['DATABASE_URL']! });
+export const db = postgres({ contract, url: process.env["DATABASE_URL"]! });
 ```
 
 A contract value is validated once, however many clients are built from it. A contract written in TypeScript with `defineContract` is already a value: keep passing it as `{ contract }`.
@@ -1176,7 +1179,7 @@ It prints each file it moved. It prints to stderr, with the reason, each file th
    const db = postgres<Contract>({ contractJson, url });
 
    // After
-   import { contract } from '../src/prisma/db';
+   import { contract } from "../src/prisma/db";
 
    const db = postgres({ contract, url });
    ```
@@ -1187,21 +1190,21 @@ It prints each file it moved. It prints to stderr, with the reason, each file th
 
    ```ts
    // src/contract-value.ts
-   import { contractFromJson } from '@prisma/orm-mongo/static';
-   import type { Contract } from './contract';
-   import contractJson from './contract.json' with { type: 'json' };
+   import { contractFromJson } from "@prisma/orm-mongo/static";
+   import type { Contract } from "./contract";
+   import contractJson from "./contract.json" with { type: "json" };
 
    export const contract = contractFromJson<Contract>(contractJson);
    ```
 
    ```ts
    // src/db.ts
-   import mongo from '@prisma/orm-mongo/runtime';
-   import { contract } from './contract-value';
+   import mongo from "@prisma/orm-mongo/runtime";
+   import { contract } from "./contract-value";
 
    // src/enums.ts
-   import mongoStatic from '@prisma/orm-mongo/static';
-   import { contract } from './contract-value';
+   import mongoStatic from "@prisma/orm-mongo/static";
+   import { contract } from "./contract-value";
 
    export const enums = mongoStatic({ contract }).enums;
    ```
@@ -1220,8 +1223,8 @@ This is `collections-on-the-client`.
 
 ```ts
 // Before
-import { orm } from '@prisma/orm-postgres/orm-client';
-import { db } from './prisma/db';
+import { orm } from "@prisma/orm-postgres/orm-client";
+import { db } from "./prisma/db";
 
 export const posts = orm({
   runtime: db.runtime(),
@@ -1251,7 +1254,7 @@ This is `client-query-and-to-sql`.
 Every SQL client now runs a plan itself and renders the SQL a plan would send:
 
 ```ts
-const plan = db.sql.public.post.select('id', 'title').limit(10).build();
+const plan = db.sql.public.post.select("id", "title").limit(10).build();
 console.log(db.toSql(plan)); // { sql: 'SELECT … LIMIT 10', params: [] }
 for await (const row of db.query(plan)) console.log(row);
 await db.execute(db.raw.sql`UPDATE post SET pinned = false`.affectedCount().build());
@@ -1265,18 +1268,18 @@ The message of `RUNTIME.PREPARE_BIND_ON_ADHOC` changed; its code did not. Code t
 
 Code that only reads these types needs no change. Code that creates an object of one of them, for example a test double typed `PostgresClient<Contract>`, must add the new members:
 
-| Type | New members |
-| --- | --- |
-| `PostgresClient`, `PostgresServerlessConnection` (`@prisma/orm-postgres/runtime`, `/serverless`) | `query`, `execute`, `toSql` |
-| `PostgresServerlessClient`, `PostgresStaticContext`, `PostgresStaticMembers` | `toSql` |
-| `PostgresQueryMembers` | `query`, `execute`, `toSql` |
-| `SqliteClient` (`@prisma/orm-sqlite/runtime`) | `query`, `execute`, `toSql` |
-| `SqliteStaticContext` | `toSql` |
-| `SqliteQueryMembers` | `query`, `execute`, `toSql` |
-| `PostgresTransactionContext`, `SqliteTransactionContext`, `SupabaseTransactionContext` | `toSql` |
-| `RoleBoundDb`, `ServiceRoleDb` (`@prisma/orm-extension-supabase/runtime`) | `toSql`; `query` and `execute` now take the plan type every SQL client shares |
-| `SupabaseInternalDb` (the service role's `supabase` member) | `toSql`, over the Supabase contract |
-| `SqliteStaticMembers` (`@prisma/orm-sqlite/runtime`) | new: the static context plus `stack`, which `SqliteClient` now extends |
+| Type                                                                                             | New members                                                                   |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `PostgresClient`, `PostgresServerlessConnection` (`@prisma/orm-postgres/runtime`, `/serverless`) | `query`, `execute`, `toSql`                                                   |
+| `PostgresServerlessClient`, `PostgresStaticContext`, `PostgresStaticMembers`                     | `toSql`                                                                       |
+| `PostgresQueryMembers`                                                                           | `query`, `execute`, `toSql`                                                   |
+| `SqliteClient` (`@prisma/orm-sqlite/runtime`)                                                    | `query`, `execute`, `toSql`                                                   |
+| `SqliteStaticContext`                                                                            | `toSql`                                                                       |
+| `SqliteQueryMembers`                                                                             | `query`, `execute`, `toSql`                                                   |
+| `PostgresTransactionContext`, `SqliteTransactionContext`, `SupabaseTransactionContext`           | `toSql`                                                                       |
+| `RoleBoundDb`, `ServiceRoleDb` (`@prisma/orm-extension-supabase/runtime`)                        | `toSql`; `query` and `execute` now take the plan type every SQL client shares |
+| `SupabaseInternalDb` (the service role's `supabase` member)                                      | `toSql`, over the Supabase contract                                           |
+| `SqliteStaticMembers` (`@prisma/orm-sqlite/runtime`)                                             | new: the static context plus `stack`, which `SqliteClient` now extends        |
 
 `supabase()` no longer creates its `pg.Pool`, driver or runtimes when it is called. It creates them on the first query, so creating a client with a URL opens nothing. It is still `async` and still requires `jwtSecret` or `jwksUrl`. `close()` now ends only a pool the client created from `url`; a `pg.Pool` passed in with the `pg` option stays open, as with `postgres()`, and the caller ends it.
 
@@ -1292,14 +1295,14 @@ A custom collection class registered with `orm({ collections })` can no longer d
 
 ```ts
 // Before
-class PostCollection extends Collection<Contract, 'Post'> {
+class PostCollection extends Collection<Contract, "Post"> {
   using(tag: string) {
     return this.where({ tag });
   }
 }
 
 // After
-class PostCollection extends Collection<Contract, 'Post'> {
+class PostCollection extends Collection<Contract, "Post"> {
   withTag(tag: string) {
     return this.where({ tag });
   }
@@ -1318,8 +1321,8 @@ Before:
 
 ```ts
 const audit: SqlMiddleware = {
-  name: 'audit',
-  familyId: 'sql',
+  name: "audit",
+  familyId: "sql",
   async beforeEncode(plan) {
     const actor = auditAnnotation.read(plan);
     if (actor) log(actor);
@@ -1331,10 +1334,10 @@ After:
 
 ```ts
 const audit: SqlMiddleware = {
-  name: 'audit',
-  familyId: 'sql',
+  name: "audit",
+  familyId: "sql",
   async activityStarted(activity) {
-    if (activity.kind !== 'orm-call') return;
+    if (activity.kind !== "orm-call") return;
     const actor = auditAnnotation.read(activity);
     if (actor) log(actor);
   },
@@ -1348,7 +1351,7 @@ A middleware that must also see annotated SQL builder queries keeps its statemen
 Change the value type from `CachedRows` to `CachedValue`:
 
 ```ts
-import type { CachedValue, CacheStore } from '@prisma/orm-extension-middleware-cache';
+import type { CachedValue, CacheStore } from "@prisma/orm-extension-middleware-cache";
 
 const store: CacheStore<unknown, CachedValue> = {
   // get, set and unset as before; value is now { kind: 'statement-rows', rows } or { kind: 'call-result', result }
@@ -1365,11 +1368,11 @@ This applies to a contract built with `defineContract` from TypeScript, used wit
 
 The ORM typed every included relation as an array of `unknown` rows. It now reads each relation's target model and cardinality from the contract:
 
-| Relation | Included value |
-| --- | --- |
-| `rel.hasMany`, `rel.manyToMany` | An array of the target model's rows |
-| `rel.belongsTo` | One row, or the row or `null` when the relation is optional or any `from` field is optional |
-| `rel.hasOne` | The row or `null` |
+| Relation                        | Included value                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------- |
+| `rel.hasMany`, `rel.manyToMany` | An array of the target model's rows                                                         |
+| `rel.belongsTo`                 | One row, or the row or `null` when the relation is optional or any `from` field is optional |
+| `rel.hasOne`                    | The row or `null`                                                                           |
 
 A cast that agrees with the new type still typechecks and can be removed. A cast that disagrees now fails to typecheck, and shows a real mismatch. A to-one relation was never an array at runtime, so fix the code that read it as one:
 
@@ -1406,7 +1409,7 @@ A field whose column has type parameters now has the parameterized output type. 
 ```ts
 const contract = defineContract({}, ({ field, model, type }) => ({
   models: {
-    Reading: model('Reading', {
+    Reading: model("Reading", {
       fields: { id: field.id.uuidv4String(), label: field.column(type.sql.String(50)) },
     }),
   },
@@ -1547,14 +1550,14 @@ ORM code names fields by their names in the schema:
 
 ```ts
 // before
-const user = await db.orm.users.create({ name: 'Alice' });
-await db.orm.users.where({ _id: user._id }).update({ name: 'Ada' });
-const posts = await db.orm.posts.where({ authorId: user._id }).include('author').all();
+const user = await db.orm.users.create({ name: "Alice" });
+await db.orm.users.where({ _id: user._id }).update({ name: "Ada" });
+const posts = await db.orm.posts.where({ authorId: user._id }).include("author").all();
 
 // after
-const user = await db.orm.users.create({ name: 'Alice' });
-await db.orm.users.where({ id: user.id }).update({ name: 'Ada' });
-const posts = await db.orm.posts.where({ authorId: user.id }).include('author').all();
+const user = await db.orm.users.create({ name: "Alice" });
+await db.orm.users.where({ id: user.id }).update({ name: "Ada" });
+const posts = await db.orm.posts.where({ authorId: user.id }).include("author").all();
 ```
 
 The same holds for every field with `@map`: `firstName String @map("first_name")` is `firstName` in the ORM, where it was `first_name`, and for the fields of a raw filter expression passed to `where`, such as `MongoFieldFilter.eq('id', ...)`. A type that picks or omits `_id` from `FieldInputTypes` or `FieldOutputTypes` names the field instead, for example `Omit<FieldInputTypes['__unbound__']['User'], 'id'>`. The type checker finds most places: run it after you re-emit.
@@ -1593,25 +1596,25 @@ To read the document id as `id` in a TypeScript contract, as a PSL contract does
 
 ```ts
 // before
-const User = model('User', {
-  collection: 'users',
+const User = model("User", {
+  collection: "users",
   fields: { _id: field.objectId(), name: field.string() },
 });
-const Post = model('Post', {
-  collection: 'posts',
+const Post = model("Post", {
+  collection: "posts",
   fields: { _id: field.objectId(), authorId: field.objectId() },
-  relations: { author: rel.belongsTo(User, { from: 'authorId', to: User.ref('_id') }) },
+  relations: { author: rel.belongsTo(User, { from: "authorId", to: User.ref("_id") }) },
 });
 
 // after
-const User = model('User', {
-  collection: 'users',
-  fields: { id: field.objectId().mongo({ field: '_id' }), name: field.string() },
+const User = model("User", {
+  collection: "users",
+  fields: { id: field.objectId().mongo({ field: "_id" }), name: field.string() },
 });
-const Post = model('Post', {
-  collection: 'posts',
-  fields: { id: field.objectId().mongo({ field: '_id' }), authorId: field.objectId() },
-  relations: { author: rel.belongsTo(User, { from: 'authorId', to: User.ref('id') }) },
+const Post = model("Post", {
+  collection: "posts",
+  fields: { id: field.objectId().mongo({ field: "_id" }), authorId: field.objectId() },
+  relations: { author: rel.belongsTo(User, { from: "authorId", to: User.ref("id") }) },
 });
 ```
 
@@ -1650,9 +1653,9 @@ MongoDB does not check existing documents when a validator is added. After it is
 To keep a collection without a validator, for example because other applications write fields the contract does not declare, give its model a control policy other than `managed`. With `controlPolicy: 'observed'`, Prisma creates and changes nothing in that collection, so it adds no validator, and `prisma db verify` reports the collection's differences from the contract as warnings:
 
 ```ts
-const Event = model('Event', {
-  collection: 'events',
-  controlPolicy: 'observed',
+const Event = model("Event", {
+  collection: "events",
+  controlPolicy: "observed",
   fields: { _id: field.objectId(), name: field.string() },
 });
 ```
@@ -1665,7 +1668,7 @@ const Event = model('Event', {
 2. List the documents each validator would refuse. In `mongosh`, connected to your database, run this from the directory of the emitted `contract.json` (change the path if it is elsewhere):
 
    ```js
-   const contract = JSON.parse(require('fs').readFileSync('contract.json', 'utf8'));
+   const contract = JSON.parse(require("fs").readFileSync("contract.json", "utf8"));
    for (const namespace of Object.values(contract.storage.namespaces)) {
      for (const [name, collection] of Object.entries(namespace.entries.collection ?? {})) {
        if (collection.validator === undefined) continue;
@@ -1719,13 +1722,13 @@ This section covers `control-client-apply-takes-invocation` and `runner-failures
 
 ```ts
 // Before
-await control.dbUpdate({ contract, mode: 'apply', migrationsDir: 'migrations', answerQuestions });
+await control.dbUpdate({ contract, mode: "apply", migrationsDir: "migrations", answerQuestions });
 
 // After
 await control.dbUpdate({
   contract,
-  mode: 'apply',
-  migrationsDir: 'migrations',
+  mode: "apply",
+  migrationsDir: "migrations",
   answerQuestions,
   invocation: { cwd: process.cwd(), configPath: undefined, dbGiven: false },
 });
@@ -1737,13 +1740,13 @@ A failure of these three operations is a `CliStructuredError`. Replace any use o
 
 The failure's fields change too:
 
-| Before | After |
-| --- | --- |
-| `failure.summary` | `failure.message` |
-| `failure.code === 'PLANNING_FAILED'`, `failure.conflicts` | `failure.code === 'MIGRATION.PLANNING_FAILED'`, `failure.meta.conflicts` |
-| `failure.warnings` on a failed `dbInit` or `dbUpdate`, and `value.warnings` on a successful one | the `onPlannerWarnings(warnings)` option, called once per run when planning raised warnings, whether the apply then succeeds or fails |
-| `failure.rowsWithoutValue`, `failure.failedTypeChange` | the runner's facts in `failure.meta`: `rowsWithoutValue` and `failedTypeChange`, and `schemaIssues` and `failedCheck` when the runner found them. A field in them is a subject object, not text such as `"User.age"` |
-| `failure.failedMigration`, `failure.databaseStorageHash` | removed; the advice in `failure.fix` names the migration directory and the `--from` hash |
+| Before                                                                                          | After                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `failure.summary`                                                                               | `failure.message`                                                                                                                                                                                                    |
+| `failure.code === 'PLANNING_FAILED'`, `failure.conflicts`                                       | `failure.code === 'MIGRATION.PLANNING_FAILED'`, `failure.meta.conflicts`                                                                                                                                             |
+| `failure.warnings` on a failed `dbInit` or `dbUpdate`, and `value.warnings` on a successful one | the `onPlannerWarnings(warnings)` option, called once per run when planning raised warnings, whether the apply then succeeds or fails                                                                                |
+| `failure.rowsWithoutValue`, `failure.failedTypeChange`                                          | the runner's facts in `failure.meta`: `rowsWithoutValue` and `failedTypeChange`, and `schemaIssues` and `failedCheck` when the runner found them. A field in them is a subject object, not text such as `"User.age"` |
+| `failure.failedMigration`, `failure.databaseStorageHash`                                        | removed; the advice in `failure.fix` names the migration directory and the `--from` hash                                                                                                                             |
 
 In `--json` output, `db init` and `db update` print the planner's warnings of a failed apply as `warn` messages before the error, instead of in the error's `meta.plannerWarnings`.
 
@@ -1753,12 +1756,15 @@ Code that reads `prisma db migrate`, `db init` or `db update` output with `--jso
 
 ```ts
 // Before
-if (error.code === 'MIGRATION.RUNNER_FAILED' && error.meta.runnerErrorCode === 'MIGRATION.SCHEMA_VERIFY_FAILED') {
+if (
+  error.code === "MIGRATION.RUNNER_FAILED" &&
+  error.meta.runnerErrorCode === "MIGRATION.SCHEMA_VERIFY_FAILED"
+) {
   report(error.meta.issues);
 }
 
 // After
-if (error.code === 'MIGRATION.SCHEMA_VERIFY_FAILED') {
+if (error.code === "MIGRATION.SCHEMA_VERIFY_FAILED") {
   report(error.meta.schemaIssues);
 }
 ```
@@ -1767,11 +1773,11 @@ A check that matched `MIGRATION.RUNNER_FAILED` alone, meaning "the apply failed"
 
 Read the facts from these `meta` keys:
 
-| Before | After |
-| --- | --- |
-| `meta.issues` | `meta.schemaIssues` |
+| Before                                                                     | After                                                                                    |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `meta.issues`                                                              | `meta.schemaIssues`                                                                      |
 | `meta.operationId`, `meta.phase`, `meta.stepDescription` of a failed check | `meta.failedCheck.operationId`, `meta.failedCheck.phase`, `meta.failedCheck.description` |
-| `meta.runnerErrorCode` | `code` |
+| `meta.runnerErrorCode`                                                     | `code`                                                                                   |
 
 `meta.failingSpace` is unchanged. `MIGRATION.PATH_UNREACHABLE` for a database with no marker now has `'empty'`, the empty contract's hash, in `meta.fromHash`, where it had `'<empty>'`. A failure also carries `meta.failedTypeChange` and `meta.rowsWithoutValue` when the runner found them.
 
@@ -1783,9 +1789,18 @@ Read the facts from these `meta` keys:
 
 ```typescript
 // before
-this.setDefault({ schema: 'public', table: 'user', column: col('role', 'text', { default: lit('member'), codecRef: { codecId: 'pg/text@1' } }), operationClass: 'widening' })
+this.setDefault({
+  schema: "public",
+  table: "user",
+  column: col("role", "text", { default: lit("member"), codecRef: { codecId: "pg/text@1" } }),
+  operationClass: "widening",
+});
 // after
-this.setDefault({ schema: 'public', table: 'user', column: col('role', 'text', { default: lit('member'), codecRef: { codecId: 'pg/text@1' } }) })
+this.setDefault({
+  schema: "public",
+  table: "user",
+  column: col("role", "text", { default: lit("member"), codecRef: { codecId: "pg/text@1" } }),
+});
 ```
 
 `node migration.ts` does not check types, so a file that still passes `operationClass` runs and ignores it. An applied migration needs nothing: `prisma db migrate` applies `ops.json`.

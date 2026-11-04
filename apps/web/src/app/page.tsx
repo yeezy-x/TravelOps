@@ -1,6 +1,5 @@
-import { Suspense } from "react";
-import { db } from "@repo/db";
-import { connection } from "next/server"
+
+import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -18,30 +17,26 @@ export default function HomePage() {
           Thoughtfully curated journeys through Kerala and beyond.
         </p>
 
-        <Suspense fallback={<p className="mt-8 text-sm text-stone-400">Loading travelers...</p>}>
-          <UserList />
-        </Suspense>
+        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link
+            href="/packages"
+            className="inline-flex items-center justify-center rounded-lg bg-[#243B2D] px-7 py-3 text-sm font-medium text-white transition-colors hover:bg-[#365641]"
+          >
+            Explore Packages
+          </Link>
+
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center rounded-lg border border-[#243B2D] px-7 py-3 text-sm font-medium text-[#243B2D] transition-colors hover:bg-[#243B2D]/5"
+          >
+            Staff Login
+          </Link>
+        </div>
+
+        <p className="mt-16 text-xs tracking-wide text-stone-400">
+          Crafted journeys. Meaningful experiences.
+        </p>
       </section>
     </main>
-  );
-}
-
-async function UserList() {
-  await connection()
-  const users = await db.orm.public.User.select("id", "email", "name").all();
-
-  if (users.length === 0) {
-    return <p className="mt-8 text-sm text-stone-400">No travelers yet.</p>;
-  }
-
-  return (
-    <ul className="mx-auto mt-8 max-w-md space-y-2 text-left text-sm text-stone-600">
-      {users.map((user) => (
-        <li key={user.id}>
-          {user.id} · {user.email}
-          {user.name ? ` · ${user.name}` : ""}
-        </li>
-      ))}
-    </ul>
   );
 }

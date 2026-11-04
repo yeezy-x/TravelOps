@@ -104,7 +104,7 @@ changes:
       glob: "**/*.{ts,mts,cts,tsx,js,mjs,cjs}"
       matches:
         - 'was rejected by codec \\?"mongo/'
-        - 'must be of type String'
+        - "must be of type String"
         - '(?<![\s\S])(?=[\s\S]*@@base\()[\s\S]*PSL_INVALID_DEFAULT_LITERAL'
   - id: decimal128-spelling
     summary: |
@@ -261,24 +261,24 @@ Write an alias as a constant field builder and use it as the field:
 // Before
 ({ field, model, type }) => {
   const types = { Embedding1536: type.pgvector.Vector(1536) } as const;
-  const Post = model('Post', {
+  const Post = model("Post", {
     fields: {
       embedding: field.namedType(types.Embedding1536).optional(),
     },
   });
   return { types, models: { Post } };
-}
+};
 
 // After
 ({ field, model, type }) => {
   const Embedding1536 = field.column(type.pgvector.Vector(1536));
-  const Post = model('Post', {
+  const Post = model("Post", {
     fields: {
       embedding: Embedding1536.optional(),
     },
   });
   return { models: { Post } };
-}
+};
 ```
 
 A field builder is immutable, so one constant serves every model. `type.*` now has a helper for every PSL type constructor of the stack, such as `type.VarChar(64)` and `type.TimestampString(3)`, and for the contributed aliases, such as `field.column(type.temporal.UpdatedAt())`. A string such as `field.namedType('Slug')` named an alias the same way; replace it with the alias's constant.
@@ -334,11 +334,23 @@ A script that only needs a list or a value can read the data lines instead. Fiel
 
 ```ts
 // Before
-const result = await client.dbUpdate({ contract, mode: 'apply', migrationsDir, acceptAccessWidening: true, answerQuestions });
+const result = await client.dbUpdate({
+  contract,
+  mode: "apply",
+  migrationsDir,
+  acceptAccessWidening: true,
+  answerQuestions,
+});
 if (result.ok) console.log(result.value.accessWidening);
 
 // After
-const result = await client.dbUpdate({ contract, mode: 'apply', migrationsDir, acceptAccessChanges: true, answerQuestions });
+const result = await client.dbUpdate({
+  contract,
+  mode: "apply",
+  migrationsDir,
+  acceptAccessChanges: true,
+  answerQuestions,
+});
 if (result.ok) console.log(result.value.accessChanges);
 ```
 
@@ -385,8 +397,9 @@ In code that reads the diagnostic, read `meta.schemaIssues` where it read `meta.
 const labels: string[] = diagnostic.meta.issues;
 // after
 const labels = diagnostic.meta.schemaIssues.map((issue) => {
-  const outcome = issue.actual === undefined ? 'missing' : issue.expected === undefined ? 'extra' : 'mismatch';
-  return `${outcome}: ${issue.path.join('/')}`;
+  const outcome =
+    issue.actual === undefined ? "missing" : issue.expected === undefined ? "extra" : "mismatch";
+  return `${outcome}: ${issue.path.join("/")}`;
 });
 ```
 
@@ -413,10 +426,10 @@ rawSql({
     {
       description: 'verify extension "vector" is not already enabled',
       sql: "SELECT NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')",
-      expectation: { expects: 'absent', object: 'extension "vector"' },
+      expectation: { expects: "absent", object: 'extension "vector"' },
     },
   ],
-})
+});
 ```
 
 Leave it out of a check about data or about several objects at once, such as a check that a column holds no NULL values.
@@ -454,10 +467,10 @@ The SQL builder's `insert` used to accept a row that left out any column. A row 
 
 ```typescript
 // User.displayName is `String` with no default
-db.sql.public.user.insert([{ email: 'admin@example.com', kind: 'admin' }]);
+db.sql.public.user.insert([{ email: "admin@example.com", kind: "admin" }]);
 // error: Property 'displayName' is missing
 
-db.sql.public.user.insert([{ email: 'admin@example.com', kind: 'admin', displayName: 'Admin' }]);
+db.sql.public.user.insert([{ email: "admin@example.com", kind: "admin", displayName: "Admin" }]);
 ```
 
 A column is still optional when it is nullable, when it has a default (`@default(...)`, including `now()` and `autoincrement()`), or when the client generates its value on create with `@onCreate(...)` or a preset that generates on create. Rows in one `insert` call are checked one by one, so they may set different optional columns.
@@ -472,20 +485,20 @@ A field generates its value on update only when it has `@onUpdate(...)` without 
 
 `SupabaseRuntime.forRole(binding)` returns a `SupabaseRoleScope`, the runtime operations under one role: `query`, `execute`, the prepared-statement operations and `connection`. Run a transaction under the role with `withTransaction(runtime.forRole(binding), fn)`.
 
-| Type | New required members |
-| --- | --- |
-| `RoleBoundDb`, `ServiceRoleDb` | `enums`, `nativeEnums` |
-| `SupabaseTransactionContext` | `enums`, `nativeEnums` (it is now `PostgresTransactionContext`) |
-| `SupabaseRuntime` | `forRole(binding)`, in place of the four `*WithRole` methods |
+| Type                           | New required members                                            |
+| ------------------------------ | --------------------------------------------------------------- |
+| `RoleBoundDb`, `ServiceRoleDb` | `enums`, `nativeEnums`                                          |
+| `SupabaseTransactionContext`   | `enums`, `nativeEnums` (it is now `PostgresTransactionContext`) |
+| `SupabaseRuntime`              | `forRole(binding)`, in place of the four `*WithRole` methods    |
 
 ```ts
 // Before
-const rows = await runtime.queryWithRole(plan, { role: 'anon' }).toArray();
-const stats = await runtime.executeWithRole(plan, { role: 'anon' });
-const named = await runtime.preparedQueryWithRole(statement, params, { role: 'anon' }).toArray();
+const rows = await runtime.queryWithRole(plan, { role: "anon" }).toArray();
+const stats = await runtime.executeWithRole(plan, { role: "anon" });
+const named = await runtime.preparedQueryWithRole(statement, params, { role: "anon" }).toArray();
 
 // After
-const anon = runtime.forRole({ role: 'anon' });
+const anon = runtime.forRole({ role: "anon" });
 const rows = await anon.query(plan).toArray();
 const stats = await anon.execute(plan);
 const named = await statement.query(anon, params).toArray();

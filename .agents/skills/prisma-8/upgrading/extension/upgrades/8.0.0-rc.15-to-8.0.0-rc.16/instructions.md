@@ -75,7 +75,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,js,mjs,json}"
       matches:
-        - '; it casts from '
+        - "; it casts from "
         - '(: |[''"`])this target has no data type for a (string|boolean|number) value[''"`]'
         - '[''"`]Unknown literal tag '
 ---
@@ -93,7 +93,7 @@ Engine 0.6.2 required ArkType `2.2.3` exactly, while the Prisma ORM packages acc
 `ControlDefaultRegistries` held the function registry and the stack's data type authoring entries. It now holds only `defaultFunctionRegistry`. The data types move to the attribute spec context, with their lookup:
 
 ```ts
-import type { DataTypeSupport } from '@internal/framework-components/authoring';
+import type { DataTypeSupport } from "@internal/framework-components/authoring";
 
 interface AttributeSpecContext {
   readonly symbols: SymbolTable;
@@ -180,12 +180,12 @@ An alternative of your own that accepts call expressions, placed beside a `funcC
 
 The body is what is written between the quotes; the text is the canonical value. These names change:
 
-| Old | New |
-| --- | --- |
-| `TaggedLiteralCanonicalization` `{ ok: true, body }`, from `canonicalizeTaggedLiteralBody` | `{ ok: true, text }` |
-| `TaggedLiteralExprAst.body()` | `TaggedLiteralExprAst.text()` |
-| `parseJsonBody`, `printJsonBody` from `@internal/sql-contract/data-type-support` | `parseJsonText`, `printJsonText` from `@internal/sql-contract/data-type-support` |
-| `checkSqlDefaultBody`, `reservedSqlDefaultBody` from `@internal/sql-contract/validators` (and `checkSqlDefaultBody` from `@internal/family-sql/control`) | `checkSqlDefaultText`, `reservedSqlDefaultText` |
+| Old                                                                                                                                                      | New                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `TaggedLiteralCanonicalization` `{ ok: true, body }`, from `canonicalizeTaggedLiteralBody`                                                               | `{ ok: true, text }`                                                             |
+| `TaggedLiteralExprAst.body()`                                                                                                                            | `TaggedLiteralExprAst.text()`                                                    |
+| `parseJsonBody`, `printJsonBody` from `@internal/sql-contract/data-type-support`                                                                         | `parseJsonText`, `printJsonText` from `@internal/sql-contract/data-type-support` |
+| `checkSqlDefaultBody`, `reservedSqlDefaultBody` from `@internal/sql-contract/validators` (and `checkSqlDefaultBody` from `@internal/family-sql/control`) | `checkSqlDefaultText`, `reservedSqlDefaultText`                                  |
 
 An entry that registers the `json` tag changes its imports:
 
@@ -208,16 +208,16 @@ The list arm of `@default` no longer offers `sql` as an element, so its label is
 
 `@default` and every other position that takes a value of a data type now word a refusal of the cast rule the same way. A refusal starts with what to write instead, the forms the column's type admits, as in `Expected a number`, not the list of types it casts from. It names the column's type and the value's type only when the value has an admitted form and is still refused, such as a number too large for the column. A quoted string on a column whose type has a tag also gets that string as a tagged literal to write, when the column's type takes it, as the `Jsonb` row shows. An element of a list written on a column whose type has a list cast, such as a vector, is refused with the forms of the list cast's element types. The two other refusals change as the table shows. The codes do not change.
 
-| Written | Message before | Message now |
-| --- | --- | --- |
-| `count Int @default(100000000000000099)` | `Field "N.count": pg/int4 has no cast from pg/int8; it casts from pg/int2` | `Field "N.count": Expected a number that pg/int4 can hold; got pg/int8` |
-| `meta Jsonb @default("{}")` | `Field "N.meta": pg/jsonb has no cast from pg/text; it casts from pg/json` | ``Field "N.meta": Expected json`...`; write json`{}` `` |
-| `count Int @default([1])` | `Field "N.count": pg/int4 has no cast from a list; it casts from pg/int2` | `Field "N.count": Expected a number; got a list` |
-| `embed pgvector.Vector(3) @default([1, "x", 3])` | `Field "N.embed" at element 2: pgvector/vector has no cast from pg/text; it casts from pg/int2, pg/int4, pg/int8, pg/numeric` | `Field "N.embed" at element 2: Expected a number` |
-| `active Int @default(true)` on SQLite | `Field "N.active": this target has no data type for a boolean value` | `Field "N.active": Expected a number; this target has no data type for a boolean value` |
-| ``v String @default(pg.sql`x`)`` | `Unknown literal tag "pg.sql". Known tags: sql, json.` | `Field "N.v": Unknown literal tag "pg.sql". Known tags: sql, json.` |
-| ``tags String[] @default([sql`'a'`])`` | `Field "Post.tags" at element 1: pg/text has no cast from sql/expression; it casts from nothing` | `Field "Post.tags" at element 1: Expected a quoted string` |
-| `enum P { @@type("pg/text@1") Low = 1 }` | `enum "P" member "Low": pg/text has no cast from pg/int2; it casts from nothing` | `enum "P" member "Low": Expected a quoted string` |
-| `enum P { Low = 3000000000 }`, an enum without `@@type` | `enum "P" member "Low": pg/int4 has no cast from pg/int8; it casts from pg/int2` | `enum "P" member "Low": Expected a number that pg/int4 can hold; got pg/int8` |
+| Written                                                 | Message before                                                                                                                | Message now                                                                             |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `count Int @default(100000000000000099)`                | `Field "N.count": pg/int4 has no cast from pg/int8; it casts from pg/int2`                                                    | `Field "N.count": Expected a number that pg/int4 can hold; got pg/int8`                 |
+| `meta Jsonb @default("{}")`                             | `Field "N.meta": pg/jsonb has no cast from pg/text; it casts from pg/json`                                                    | ``Field "N.meta": Expected json`...`; write json`{}` ``                                 |
+| `count Int @default([1])`                               | `Field "N.count": pg/int4 has no cast from a list; it casts from pg/int2`                                                     | `Field "N.count": Expected a number; got a list`                                        |
+| `embed pgvector.Vector(3) @default([1, "x", 3])`        | `Field "N.embed" at element 2: pgvector/vector has no cast from pg/text; it casts from pg/int2, pg/int4, pg/int8, pg/numeric` | `Field "N.embed" at element 2: Expected a number`                                       |
+| `active Int @default(true)` on SQLite                   | `Field "N.active": this target has no data type for a boolean value`                                                          | `Field "N.active": Expected a number; this target has no data type for a boolean value` |
+| ``v String @default(pg.sql`x`)``                        | `Unknown literal tag "pg.sql". Known tags: sql, json.`                                                                        | `Field "N.v": Unknown literal tag "pg.sql". Known tags: sql, json.`                     |
+| ``tags String[] @default([sql`'a'`])``                  | `Field "Post.tags" at element 1: pg/text has no cast from sql/expression; it casts from nothing`                              | `Field "Post.tags" at element 1: Expected a quoted string`                              |
+| `enum P { @@type("pg/text@1") Low = 1 }`                | `enum "P" member "Low": pg/text has no cast from pg/int2; it casts from nothing`                                              | `enum "P" member "Low": Expected a quoted string`                                       |
+| `enum P { Low = 3000000000 }`, an enum without `@@type` | `enum "P" member "Low": pg/int4 has no cast from pg/int8; it casts from pg/int2`                                              | `enum "P" member "Low": Expected a number that pg/int4 can hold; got pg/int8`           |
 
 Update an assertion on one of these messages to the new text.

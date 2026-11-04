@@ -3,8 +3,8 @@
 // to `@onCreate(...)` in the Prisma 8 schema files named on the command line. The call is kept as
 // written; string literals and `//` comments are left unchanged. A file without the `// use prisma-8` directive (or the
 // older `// use prisma-next`) is left unchanged.
-import { readFileSync, writeFileSync } from 'node:fs';
-import process from 'node:process';
+import { readFileSync, writeFileSync } from "node:fs";
+import process from "node:process";
 
 const CLIENT_FUNCTION_IN_DEFAULT = /@default\((\s*(?:uuid|cuid|ulid|nanoid)\s*\([^()]*\)\s*)\)/g;
 // The directive rule contract emit uses, copied from isPrismaNextSchema in
@@ -17,14 +17,14 @@ function spansOf(line) {
   let codeStart = 0;
   let index = 0;
   while (index < line.length) {
-    if (line[index] === '/' && line[index + 1] === '/') break;
+    if (line[index] === "/" && line[index + 1] === "/") break;
     if (line[index] !== '"') {
       index += 1;
       continue;
     }
     spans.push({ text: line.slice(codeStart, index), code: true });
     let close = index + 1;
-    while (close < line.length && line[close] !== '"') close += line[close] === '\\' ? 2 : 1;
+    while (close < line.length && line[close] !== '"') close += line[close] === "\\" ? 2 : 1;
     spans.push({ text: line.slice(index, close + 1), code: false });
     index = close + 1;
     codeStart = index;
@@ -36,7 +36,7 @@ function spansOf(line) {
 
 function rewrite(text) {
   let count = 0;
-  const lines = text.split('\n').map((line) =>
+  const lines = text.split("\n").map((line) =>
     spansOf(line)
       .map(({ text: span, code }) =>
         code
@@ -46,21 +46,21 @@ function rewrite(text) {
             })
           : span,
       )
-      .join(''),
+      .join(""),
   );
-  return { text: lines.join('\n'), count };
+  return { text: lines.join("\n"), count };
 }
 
 const files = process.argv.slice(2);
 if (files.length === 0) {
-  process.stderr.write('Usage: node rewrite-default-generators.mjs <schema.prisma>...\n');
+  process.stderr.write("Usage: node rewrite-default-generators.mjs <schema.prisma>...\n");
   process.exit(1);
 }
 
 const texts = new Map();
 for (const file of files) {
   try {
-    texts.set(file, readFileSync(file, 'utf8'));
+    texts.set(file, readFileSync(file, "utf8"));
   } catch {
     process.stderr.write(`${file}: cannot be read; no file was changed.\n`);
     process.exit(1);
@@ -81,6 +81,6 @@ for (const [file, text] of texts) {
   }
   writeFileSync(file, rewritten.text);
   process.stdout.write(
-    `${file}: rewrote ${rewritten.count} @default ${rewritten.count === 1 ? 'call' : 'calls'} to @onCreate.\n`,
+    `${file}: rewrote ${rewritten.count} @default ${rewritten.count === 1 ? "call" : "calls"} to @onCreate.\n`,
   );
 }

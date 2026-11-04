@@ -19,7 +19,7 @@
  * The storage hash and migration hash rules are copied from `@internal/contract` and
  * `@internal/migration-tools` because a project's strict `node_modules` does not expose them.
  */
-import { createHash } from 'node:crypto';
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   type Dirent,
@@ -32,8 +32,8 @@ import {
   rmSync,
   statSync,
   writeFileSync,
-} from 'node:fs';
-import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+} from "node:fs";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 type Json = null | boolean | number | string | Json[] | JsonRecord;
 interface JsonRecord {
@@ -41,18 +41,18 @@ interface JsonRecord {
 }
 
 const DATA_TYPES: Readonly<Record<string, string>> = {
-  'sqlite/datetime@1': 'sqlite/datetime',
-  'sqlite/json@1': 'sqlite/json',
+  "sqlite/datetime@1": "sqlite/datetime",
+  "sqlite/json@1": "sqlite/json",
 };
-const DATETIME_CODEC = 'sqlite/datetime@1';
-const PREVIOUS_DATA_TYPE = 'sqlite/text';
+const DATETIME_CODEC = "sqlite/datetime@1";
+const PREVIOUS_DATA_TYPE = "sqlite/text";
 const UTC_INSTANT = /^(.*:\d{2})(?:\.(\d{1,3}))?Z$/;
-const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist', 'build']);
+const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build"]);
 const HASH = /^[0-9a-f]{64}$/;
-const TEMPORARY_SUFFIX = '.data-type-values-tmp';
+const TEMPORARY_SUFFIX = ".data-type-values-tmp";
 
 function isRecord(value: unknown): value is JsonRecord {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
@@ -67,7 +67,7 @@ function parseJson(text: string): Json | undefined {
 }
 
 function sha256(text: string): string {
-  return createHash('sha256').update(text).digest('hex');
+  return createHash("sha256").update(text).digest("hex");
 }
 
 function compareCodeUnits(a: string, b: string): number {
@@ -96,67 +96,67 @@ function matchesPath(path: readonly string[], pattern: readonly PathSegment[]): 
   return pattern.every((segment, index) => {
     const value = path[index];
     if (value === undefined) return false;
-    if (segment === '*') return true;
-    return typeof segment === 'string' ? value === segment : segment.includes(value);
+    if (segment === "*") return true;
+    return typeof segment === "string" ? value === segment : segment.includes(value);
   });
 }
 
 const SQL_PRESERVED_EMPTY: readonly (readonly PathSegment[])[] = [
-  ['storage', 'namespaces', '*', 'entries', 'table'],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*'],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', ['uniques', 'indexes', 'foreignKeys']],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', 'indexes', 'unique'],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', 'columns', '*', 'default', 'value'],
+  ["storage", "namespaces", "*", "entries", "table"],
+  ["storage", "namespaces", "*", "entries", "table", "*"],
+  ["storage", "namespaces", "*", "entries", "table", "*", ["uniques", "indexes", "foreignKeys"]],
+  ["storage", "namespaces", "*", "entries", "table", "*", "indexes", "unique"],
+  ["storage", "namespaces", "*", "entries", "table", "*", "columns", "*", "default", "value"],
 ];
 const COLUMN_DEFAULT_VALUE: readonly PathSegment[] = [
-  'storage',
-  'namespaces',
-  '*',
-  'entries',
-  'table',
-  '*',
-  'columns',
-  '*',
-  'default',
-  'value',
+  "storage",
+  "namespaces",
+  "*",
+  "entries",
+  "table",
+  "*",
+  "columns",
+  "*",
+  "default",
+  "value",
 ];
 const COLUMN_PATHS: readonly (readonly PathSegment[])[] = [
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', 'columns', '*'],
-  ['storage', 'namespaces', '*', 'tables', '*', 'columns', '*'],
+  ["storage", "namespaces", "*", "entries", "table", "*", "columns", "*"],
+  ["storage", "namespaces", "*", "tables", "*", "columns", "*"],
 ];
 const DATA_TYPE_PATHS: readonly (readonly PathSegment[])[] = [
   ...COLUMN_PATHS,
-  ['storage', 'types', '*'],
+  ["storage", "types", "*"],
 ];
 const FRAMEWORK_PRESERVED_EMPTY: readonly (readonly PathSegment[])[] = [
-  ['domain', 'namespaces'],
-  ['domain', 'namespaces', '*'],
-  ['domain', 'namespaces', '*', 'models'],
-  ['domain', 'namespaces', '*', 'models', '*', 'relations'],
-  ['domain', 'namespaces', '*', 'models', '*', 'storage'],
-  ['storage', 'namespaces'],
-  ['storage', 'namespaces', '*', 'entries'],
-  ['roots'],
-  ['extensions'],
-  ['extensions', '*'],
-  ['capabilities'],
-  ['meta'],
-  ['execution', 'mutations', 'defaults'],
+  ["domain", "namespaces"],
+  ["domain", "namespaces", "*"],
+  ["domain", "namespaces", "*", "models"],
+  ["domain", "namespaces", "*", "models", "*", "relations"],
+  ["domain", "namespaces", "*", "models", "*", "storage"],
+  ["storage", "namespaces"],
+  ["storage", "namespaces", "*", "entries"],
+  ["roots"],
+  ["extensions"],
+  ["extensions", "*"],
+  ["capabilities"],
+  ["meta"],
+  ["execution", "mutations", "defaults"],
 ];
 const TOP_LEVEL_ORDER = [
-  'schemaVersion',
-  'canonicalVersion',
-  'targetFamily',
-  'target',
-  'profileHash',
-  'roots',
-  'domain',
-  'storage',
-  'execution',
-  'capabilities',
-  'extensions',
-  'defaultControlPolicy',
-  'meta',
+  "schemaVersion",
+  "canonicalVersion",
+  "targetFamily",
+  "target",
+  "profileHash",
+  "roots",
+  "domain",
+  "storage",
+  "execution",
+  "capabilities",
+  "extensions",
+  "defaultControlPolicy",
+  "meta",
 ];
 
 function isDefaultValue(value: Json): boolean {
@@ -166,8 +166,8 @@ function isDefaultValue(value: Json): boolean {
 }
 
 function isPreservedEmpty(path: readonly string[], key: string): boolean {
-  if (key === 'nullable') return true;
-  if (key === 'elementNullable' && path.at(-2) === 'many') return true;
+  if (key === "nullable") return true;
+  if (key === "elementNullable" && path.at(-2) === "many") return true;
   if (FRAMEWORK_PRESERVED_EMPTY.some((pattern) => matchesPath(path, pattern))) return true;
   if (
     path.length >= COLUMN_DEFAULT_VALUE.length &&
@@ -183,9 +183,9 @@ function omitDefaults(value: Json, path: readonly string[]): Json {
   const result: JsonRecord = {};
   for (const [key, child] of Object.entries(value)) {
     const childPath = [...path, key];
-    if (key === '_generated') continue;
-    if (key === 'generated' && child === false) continue;
-    if ((key === 'onDelete' || key === 'onUpdate') && child === 'noAction') continue;
+    if (key === "_generated") continue;
+    if (key === "generated" && child === false) continue;
+    if ((key === "onDelete" || key === "onUpdate") && child === "noAction") continue;
     if (isDefaultValue(child) && !isPreservedEmpty(childPath, key)) continue;
     result[key] = omitDefaults(child, childPath);
   }
@@ -193,19 +193,19 @@ function omitDefaults(value: Json, path: readonly string[]): Json {
 }
 
 function compareByName(a: Json, b: Json): number {
-  const nameA = isRecord(a) && typeof a['name'] === 'string' ? a['name'] : '';
-  const nameB = isRecord(b) && typeof b['name'] === 'string' ? b['name'] : '';
+  const nameA = isRecord(a) && typeof a["name"] === "string" ? a["name"] : "";
+  const nameB = isRecord(b) && typeof b["name"] === "string" ? b["name"] : "";
   return compareCodeUnits(nameA, nameB);
 }
 
 function sortTableArrays(storage: Json): Json {
   if (!isRecord(storage)) return storage;
-  const namespaces = storage['namespaces'];
+  const namespaces = storage["namespaces"];
   if (!isRecord(namespaces)) return storage;
   const sortedNamespaces: JsonRecord = {};
   for (const [namespaceId, namespace] of Object.entries(namespaces)) {
-    const entries = isRecord(namespace) ? namespace['entries'] : undefined;
-    const tables = isRecord(entries) ? entries['table'] : undefined;
+    const entries = isRecord(namespace) ? namespace["entries"] : undefined;
+    const tables = isRecord(entries) ? entries["table"] : undefined;
     if (!isRecord(namespace) || !isRecord(entries) || !isRecord(tables)) {
       sortedNamespaces[namespaceId] = namespace;
       continue;
@@ -217,7 +217,7 @@ function sortTableArrays(storage: Json): Json {
         continue;
       }
       const sortedTable: JsonRecord = { ...table };
-      for (const key of ['checks', 'indexes', 'uniques']) {
+      for (const key of ["checks", "indexes", "uniques"]) {
         const list = table[key];
         if (Array.isArray(list)) sortedTable[key] = [...list].sort(compareByName);
       }
@@ -246,7 +246,7 @@ function orderTopLevel(value: JsonRecord): JsonRecord {
 }
 
 function omitNamespaceKinds(storage: JsonRecord): JsonRecord {
-  const namespaces = storage['namespaces'];
+  const namespaces = storage["namespaces"];
   if (!isRecord(namespaces)) return storage;
   const stripped: JsonRecord = {};
   for (const [namespaceId, namespace] of Object.entries(namespaces)) {
@@ -261,13 +261,13 @@ function omitNamespaceKinds(storage: JsonRecord): JsonRecord {
 }
 
 function computeStorageHash(contract: JsonRecord): string {
-  const storage = isRecord(contract['storage']) ? contract['storage'] : {};
+  const storage = isRecord(contract["storage"]) ? contract["storage"] : {};
   const { storageHash: _published, ...withoutHash } = storage;
   const hashed: JsonRecord = {
-    schemaVersion: '1',
-    targetFamily: typeof contract['targetFamily'] === 'string' ? contract['targetFamily'] : '',
-    target: typeof contract['target'] === 'string' ? contract['target'] : '',
-    profileHash: '',
+    schemaVersion: "1",
+    targetFamily: typeof contract["targetFamily"] === "string" ? contract["targetFamily"] : "",
+    target: typeof contract["target"] === "string" ? contract["target"] : "",
+    profileHash: "",
     roots: {},
     domain: { namespaces: {} },
     storage: omitNamespaceKinds(withoutHash),
@@ -276,13 +276,13 @@ function computeStorageHash(contract: JsonRecord): string {
     meta: {},
   };
   const withoutDefaults = omitDefaults(hashed, []);
-  if (!isRecord(withoutDefaults)) return '';
+  if (!isRecord(withoutDefaults)) return "";
   const withSortedStorage = {
     ...withoutDefaults,
-    storage: sortTableArrays(withoutDefaults['storage'] ?? {}),
+    storage: sortTableArrays(withoutDefaults["storage"] ?? {}),
   };
   const sorted = sortKeys(withSortedStorage);
-  return isRecord(sorted) ? sha256(JSON.stringify(orderTopLevel(sorted), null, 2)) : '';
+  return isRecord(sorted) ? sha256(JSON.stringify(orderTopLevel(sorted), null, 2)) : "";
 }
 
 function computeMigrationHash(metadata: JsonRecord, ops: Json): string {
@@ -339,7 +339,7 @@ function listFiles(root: string): ProjectFiles {
       compareCodeUnits(a.name, b.name),
     );
     const inMigrationPackage = entries.some(
-      (entry) => entry.name === 'migration.json' && isFileEntry(dir, entry),
+      (entry) => entry.name === "migration.json" && isFileEntry(dir, entry),
     );
     for (const entry of entries) {
       const path = join(dir, entry.name);
@@ -348,7 +348,7 @@ function listFiles(root: string): ProjectFiles {
         continue;
       }
       if (entry.isDirectory() || (entry.isSymbolicLink() && isDirectory(path))) {
-        if (!SKIPPED_DIRECTORIES.has(entry.name) && !entry.name.startsWith('.')) visit(path);
+        if (!SKIPPED_DIRECTORIES.has(entry.name) && !entry.name.startsWith(".")) visit(path);
         continue;
       }
       if (!isFileEntry(dir, entry)) continue;
@@ -364,10 +364,10 @@ function listFiles(root: string): ProjectFiles {
   const named = (test: (file: FoundFile, name: string) => boolean): string[] =>
     files.filter((file) => test(file, basename(file.path))).map((file) => file.path);
   return {
-    json: named((_file, name) => name.endsWith('.json')),
-    migrationJson: named((_file, name) => name === 'migration.json'),
-    refs: named((file, name) => name.endsWith('.json') && basename(dirname(file.path)) === 'refs'),
-    migrationTs: named((file, name) => name === 'migration.ts' && file.inMigrationPackage),
+    json: named((_file, name) => name.endsWith(".json")),
+    migrationJson: named((_file, name) => name === "migration.json"),
+    refs: named((file, name) => name.endsWith(".json") && basename(dirname(file.path)) === "refs"),
+    migrationTs: named((file, name) => name === "migration.ts" && file.inMigrationPackage),
     leftovers,
   };
 }
@@ -375,9 +375,9 @@ function listFiles(root: string): ProjectFiles {
 function isSnapshotContract(path: string): boolean {
   const snapshotDir = dirname(path);
   return (
-    basename(path) === 'contract.json' &&
+    basename(path) === "contract.json" &&
     HASH.test(basename(snapshotDir)) &&
-    basename(dirname(snapshotDir)) === 'snapshots'
+    basename(dirname(snapshotDir)) === "snapshots"
   );
 }
 
@@ -420,7 +420,7 @@ function enumKey(namespaceId: string, name: string): string {
 }
 
 function withStorageHash(contract: JsonRecord, hash: string): JsonRecord {
-  const storage = isRecord(contract['storage']) ? contract['storage'] : {};
+  const storage = isRecord(contract["storage"]) ? contract["storage"] : {};
   return { ...contract, storage: { ...storage, storageHash: hash } };
 }
 
@@ -428,8 +428,8 @@ function emittedForm(contract: JsonRecord, original: string): string {
   const { _generated: generated, ...rest } = contract;
   const sorted = sortKeys(rest);
   const ordered = isRecord(sorted) ? orderTopLevel(sorted) : {};
-  if (generated !== undefined) ordered['_generated'] = generated;
-  return `${JSON.stringify(ordered, null, 2)}${original.endsWith('\n') ? '\n' : ''}`;
+  if (generated !== undefined) ordered["_generated"] = generated;
+  return `${JSON.stringify(ordered, null, 2)}${original.endsWith("\n") ? "\n" : ""}`;
 }
 
 function snapshotForm(contract: JsonRecord): string {
@@ -450,15 +450,15 @@ function scanBlocks(text: string): Block[] {
   for (let index = 0; index < text.length; index++) {
     const char = text[index];
     if (quote !== undefined) {
-      if (char === '\\') index++;
+      if (char === "\\") index++;
       else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === "'" || char === '"' || char === '`') {
+    if (char === "'" || char === '"' || char === "`") {
       quote = char;
       continue;
     }
-    if (char === '{') {
+    if (char === "{") {
       const key =
         /(?:readonly\s+)?([\p{ID_Start}_$][\p{ID_Continue}$]*|'[^']*'|"[^"]*")\s*\??\s*:\s*$/u.exec(
           text.slice(Math.max(0, index - 200), index),
@@ -466,12 +466,12 @@ function scanBlocks(text: string): Block[] {
       const block: Block = {
         start: index,
         end: text.length,
-        label: key?.[1]?.replace(/^['"]|['"]$/g, '') ?? '',
+        label: key?.[1]?.replace(/^['"]|['"]$/g, "") ?? "",
         parent: open.at(-1),
       };
       open.push(block);
       blocks.push(block);
-    } else if (char === '}') {
+    } else if (char === "}") {
       const block = open.pop();
       if (block !== undefined) block.end = index;
     }
@@ -493,21 +493,21 @@ function innermostBlock(blocks: readonly Block[], position: number): Block | und
 }
 
 function isColumnBlock(block: Block): boolean {
-  return block.parent?.label === 'columns';
+  return block.parent?.label === "columns";
 }
 
 function isStorageTypeBlock(blocks: readonly Block[], block: Block): boolean {
   const types = block.parent;
   return (
-    types?.label === 'types' &&
-    blocks.some((other) => other.parent === types.parent && other.label === 'namespaces')
+    types?.label === "types" &&
+    blocks.some((other) => other.parent === types.parent && other.label === "namespaces")
   );
 }
 
 function isInColumnDefault(block: Block): boolean {
   for (let ancestor = block.parent; ancestor !== undefined; ancestor = ancestor.parent)
     if (
-      ancestor.label === 'default' &&
+      ancestor.label === "default" &&
       ancestor.parent !== undefined &&
       isColumnBlock(ancestor.parent)
     )
@@ -525,14 +525,14 @@ function genericArgumentEnd(text: string, start: number): number {
   for (let index = start; index < text.length; index++) {
     const char = text[index];
     if (quote !== undefined) {
-      if (char === '\\') index++;
+      if (char === "\\") index++;
       else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === "'" || char === '"' || char === '`') quote = char;
-    else if (char === '{' || char === '[' || char === '(' || char === '<') depth++;
-    else if (char === '}' || char === ']' || char === ')') depth--;
-    else if (char === '>') {
+    if (char === "'" || char === '"' || char === "`") quote = char;
+    else if (char === "{" || char === "[" || char === "(" || char === "<") depth++;
+    else if (char === "}" || char === "]" || char === ")") depth--;
+    else if (char === ">") {
       if (depth === 0) return index;
       depth--;
     }
@@ -546,7 +546,7 @@ function memberOf(
   block: Block,
   name: string,
 ): string | undefined {
-  const pattern = new RegExp(`readonly ${name}: (['"])((?:\\\\.|(?!\\1).)*)\\1`, 'g');
+  const pattern = new RegExp(`readonly ${name}: (['"])((?:\\\\.|(?!\\1).)*)\\1`, "g");
   for (const member of text.slice(block.start, block.end).matchAll(pattern)) {
     if (innermostBlock(blocks, block.start + member.index) === block) return member[2];
   }
@@ -560,16 +560,16 @@ function literalEnd(text: string, start: number): number {
   for (let index = start; index < text.length; index++) {
     const char = text[index];
     if (quote !== undefined) {
-      if (char === '\\') index++;
+      if (char === "\\") index++;
       else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === "'" || char === '"' || char === '`') quote = char;
-    else if (char === '{' || char === '[' || char === '(' || char === '<') depth++;
-    else if (char === '}' || char === ']' || char === ')' || char === '>') {
+    if (char === "'" || char === '"' || char === "`") quote = char;
+    else if (char === "{" || char === "[" || char === "(" || char === "<") depth++;
+    else if (char === "}" || char === "]" || char === ")" || char === ">") {
       if (depth === 0) return index;
       depth--;
-    } else if ((char === ';' || char === ',') && depth === 0) return index;
+    } else if ((char === ";" || char === ",") && depth === 0) return index;
   }
   return text.length;
 }
@@ -580,13 +580,13 @@ function bracketEnd(text: string, open: number): number {
   for (let index = open; index < text.length; index++) {
     const char = text[index];
     if (quote !== undefined) {
-      if (char === '\\') index++;
+      if (char === "\\") index++;
       else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === "'" || char === '"' || char === '`') quote = char;
-    else if (char === '[' || char === '{' || char === '(') depth++;
-    else if (char === ']' || char === '}' || char === ')') {
+    if (char === "'" || char === '"' || char === "`") quote = char;
+    else if (char === "[" || char === "{" || char === "(") depth++;
+    else if (char === "]" || char === "}" || char === ")") {
       depth--;
       if (depth === 0) return index + 1;
     }
@@ -606,7 +606,7 @@ function readDirectory(dir: string): Map<string, string> {
   if (!existsSync(dir)) return files;
   for (const entry of readdirSync(dir, { withFileTypes: true }))
     if (isFileEntry(dir, entry) && !entry.name.endsWith(TEMPORARY_SUFFIX))
-      files.set(entry.name, readFileSync(join(dir, entry.name), 'utf8'));
+      files.set(entry.name, readFileSync(join(dir, entry.name), "utf8"));
   return files;
 }
 
@@ -657,9 +657,9 @@ function summary(
 ): readonly string[] {
   if (contractsFound === 0) return [`No SQLite contract was found under ${root}; nothing changed.`];
   if (files === 0 && directories === 0)
-    return ['The project is already in the new form; nothing changed.'];
-  const renamed = count(directories, 'snapshot directory', 'snapshot directories');
-  const changes = `Rewrote ${count(files, 'file', 'files')} and renamed ${renamed}.`;
+    return ["The project is already in the new form; nothing changed."];
+  const renamed = count(directories, "snapshot directory", "snapshot directories");
+  const changes = `Rewrote ${count(files, "file", "files")} and renamed ${renamed}.`;
   if (hashes.size === 0) return [changes];
   return [
     `${changes} Storage hashes changed (old -> new):`,
@@ -671,9 +671,9 @@ function summary(
 
 /** The text `sqlite/datetime` stores for an instant the previous release stored: three fraction digits, always. */
 function storedDatetime(value: Json): Json {
-  if (typeof value !== 'string') return value;
+  if (typeof value !== "string") return value;
   const match = UTC_INSTANT.exec(value);
-  return match === null ? value : `${match[1]}.${(match[2] ?? '').padEnd(3, '0')}Z`;
+  return match === null ? value : `${match[1]}.${(match[2] ?? "").padEnd(3, "0")}Z`;
 }
 
 function storedDatetimes(value: Json): Json {
@@ -699,29 +699,29 @@ function rewriteDatetimeEnums(contract: JsonRecord): Rewrite {
     return next;
   };
 
-  const domain = mapRecord(contract['domain'] ?? null, (key, namespaces) =>
-    key !== 'namespaces'
+  const domain = mapRecord(contract["domain"] ?? null, (key, namespaces) =>
+    key !== "namespaces"
       ? namespaces
       : mapRecord(namespaces, (namespaceId, namespace) =>
           mapRecord(namespace, (kind, enums) =>
-            kind !== 'enum'
+            kind !== "enum"
               ? enums
               : mapRecord(enums, (name, enumType) => {
-                  const members = isRecord(enumType) ? enumType['members'] : undefined;
+                  const members = isRecord(enumType) ? enumType["members"] : undefined;
                   if (
                     !isRecord(enumType) ||
-                    enumType['codecId'] !== DATETIME_CODEC ||
+                    enumType["codecId"] !== DATETIME_CODEC ||
                     !Array.isArray(members)
                   )
                     return enumType;
                   datetimeEnums.add(enumKey(namespaceId, name));
                   const values = rewritten(
-                    members.map((member) => (isRecord(member) ? (member['value'] ?? null) : null)),
+                    members.map((member) => (isRecord(member) ? (member["value"] ?? null) : null)),
                   );
                   return {
                     ...enumType,
                     members: members.map((member, index) =>
-                      isRecord(member) && member['value'] !== undefined
+                      isRecord(member) && member["value"] !== undefined
                         ? { ...member, value: values[index] ?? null }
                         : member,
                     ),
@@ -731,39 +731,39 @@ function rewriteDatetimeEnums(contract: JsonRecord): Rewrite {
         ),
   );
 
-  const storage = contract['storage'];
-  const namespaces = isRecord(storage) ? storage['namespaces'] : undefined;
+  const storage = contract["storage"];
+  const namespaces = isRecord(storage) ? storage["namespaces"] : undefined;
   for (const namespace of isRecord(namespaces) ? Object.values(namespaces) : []) {
-    const entries = isRecord(namespace) ? namespace['entries'] : undefined;
-    const tables = isRecord(entries) ? entries['table'] : undefined;
+    const entries = isRecord(namespace) ? namespace["entries"] : undefined;
+    const tables = isRecord(entries) ? entries["table"] : undefined;
     for (const table of isRecord(tables) ? Object.values(tables) : []) {
-      const columns = isRecord(table) ? table['columns'] : undefined;
+      const columns = isRecord(table) ? table["columns"] : undefined;
       for (const column of isRecord(columns) ? Object.values(columns) : []) {
-        const valueSet = isRecord(column) ? column['valueSet'] : undefined;
+        const valueSet = isRecord(column) ? column["valueSet"] : undefined;
         if (
           isRecord(column) &&
-          column['codecId'] === DATETIME_CODEC &&
+          column["codecId"] === DATETIME_CODEC &&
           isRecord(valueSet) &&
-          typeof valueSet['namespaceId'] === 'string' &&
-          typeof valueSet['entityName'] === 'string'
+          typeof valueSet["namespaceId"] === "string" &&
+          typeof valueSet["entityName"] === "string"
         )
-          datetimeEnums.add(enumKey(valueSet['namespaceId'], valueSet['entityName']));
+          datetimeEnums.add(enumKey(valueSet["namespaceId"], valueSet["entityName"]));
       }
     }
   }
 
   const nextStorage = mapRecord(storage ?? null, (key, storageNamespaces) =>
-    key !== 'namespaces'
+    key !== "namespaces"
       ? storageNamespaces
       : mapRecord(storageNamespaces, (namespaceId, namespace) =>
           mapRecord(namespace, (namespaceKey, entries) =>
-            namespaceKey !== 'entries'
+            namespaceKey !== "entries"
               ? entries
               : mapRecord(entries, (entryKind, valueSets) =>
-                  entryKind !== 'valueSet'
+                  entryKind !== "valueSet"
                     ? valueSets
                     : mapRecord(valueSets, (name, valueSet) => {
-                        const values = isRecord(valueSet) ? valueSet['values'] : undefined;
+                        const values = isRecord(valueSet) ? valueSet["values"] : undefined;
                         if (
                           !datetimeEnums.has(enumKey(namespaceId, name)) ||
                           !isRecord(valueSet) ||
@@ -780,7 +780,7 @@ function rewriteDatetimeEnums(contract: JsonRecord): Rewrite {
   return {
     contract: {
       ...contract,
-      ...(contract['domain'] === undefined ? {} : { domain }),
+      ...(contract["domain"] === undefined ? {} : { domain }),
       ...(storage === undefined ? {} : { storage: nextStorage }),
     },
     changed,
@@ -789,27 +789,27 @@ function rewriteDatetimeEnums(contract: JsonRecord): Rewrite {
 }
 
 function rewriteContract(contract: JsonRecord): Rewrite {
-  if (contract['target'] !== 'sqlite')
+  if (contract["target"] !== "sqlite")
     return { contract, changed: false, datetimeEnums: new Set() };
   let changed = false;
   const rewriteEntry = (entry: JsonRecord): JsonRecord => {
-    const codecId = entry['codecId'];
-    const dataType = typeof codecId === 'string' ? DATA_TYPES[codecId] : undefined;
+    const codecId = entry["codecId"];
+    const dataType = typeof codecId === "string" ? DATA_TYPES[codecId] : undefined;
     if (dataType === undefined) return entry;
     let next = entry;
-    if (entry['dataType'] === PREVIOUS_DATA_TYPE) {
+    if (entry["dataType"] === PREVIOUS_DATA_TYPE) {
       next = { ...next, dataType };
       changed = true;
     }
-    const columnDefault = next['default'];
+    const columnDefault = next["default"];
     if (
       codecId === DATETIME_CODEC &&
       isRecord(columnDefault) &&
-      columnDefault['kind'] === 'literal' &&
-      columnDefault['value'] !== undefined
+      columnDefault["kind"] === "literal" &&
+      columnDefault["value"] !== undefined
     ) {
-      const value = storedDatetimes(columnDefault['value']);
-      if (canonicalizeJson(value) !== canonicalizeJson(columnDefault['value'])) {
+      const value = storedDatetimes(columnDefault["value"]);
+      if (canonicalizeJson(value) !== canonicalizeJson(columnDefault["value"])) {
         next = { ...next, default: { ...columnDefault, value } };
         changed = true;
       }
@@ -834,7 +834,7 @@ interface Edit {
 function datetimeEdits(text: string, start: number, end: number): Edit[] {
   const edits: Edit[] = [];
   for (const match of text.slice(start, end).matchAll(/(['"])((?:\\.|(?!\1).)*)\1/g)) {
-    const value = match[2] ?? '';
+    const value = match[2] ?? "";
     const stored = storedDatetime(value);
     if (stored === value) continue;
     const at = start + match.index + 1;
@@ -854,7 +854,7 @@ function rewriteDts(
   for (const match of text.matchAll(/readonly dataType: (['"])sqlite\/text\1/g)) {
     const block = innermostBlock(blocks, match.index);
     if (block === undefined || !holdsDataType(blocks, block)) continue;
-    const codecId = memberOf(text, blocks, block, 'codecId');
+    const codecId = memberOf(text, blocks, block, "codecId");
     const dataType = codecId === undefined ? undefined : DATA_TYPES[codecId];
     if (dataType === undefined) continue;
     const quote = match[1] ?? "'";
@@ -876,8 +876,8 @@ function rewriteDts(
     const namespace = kind?.parent?.parent;
     if (
       valueSet === undefined ||
-      kind?.label !== 'valueSet' ||
-      kind.parent?.label !== 'entries' ||
+      kind?.label !== "valueSet" ||
+      kind.parent?.label !== "entries" ||
       namespace === undefined ||
       !datetimeEnums.has(enumKey(namespace.label, valueSet.label))
     )
@@ -892,8 +892,8 @@ function rewriteDts(
     const namespace = enumType?.parent?.parent;
     if (
       member === undefined ||
-      member.label !== '' ||
-      enumType?.parent?.label !== 'enum' ||
+      member.label !== "" ||
+      enumType?.parent?.label !== "enum" ||
       namespace === undefined ||
       !datetimeEnums.has(enumKey(namespace.label, enumType.label))
     )
@@ -928,15 +928,15 @@ interface ContractPlan {
   readonly datetimeEnums: ReadonlySet<string>;
 }
 
-const JSON_FILES_THAT_MUST_PARSE = new Set(['contract.json', 'migration.json']);
+const JSON_FILES_THAT_MUST_PARSE = new Set(["contract.json", "migration.json"]);
 
 function parseRoot(args: readonly string[]): { readonly root: string; readonly errors: string[] } {
-  const errors = args.filter((arg) => arg.startsWith('-')).map((arg) => `${arg}: unknown option`);
-  const positional = args.filter((arg) => !arg.startsWith('-'));
+  const errors = args.filter((arg) => arg.startsWith("-")).map((arg) => `${arg}: unknown option`);
+  const positional = args.filter((arg) => !arg.startsWith("-"));
   if (positional.length > 1) errors.push(`expected one project root, got ${positional.length}`);
   const root = resolve(positional[0] ?? process.cwd());
   if (errors.length === 0 && !isDirectory(root)) errors.push(`${root}: not a directory`);
-  if (errors.length > 0) errors.push('Usage: node data-type-values.ts [project-root]');
+  if (errors.length > 0) errors.push("Usage: node data-type-values.ts [project-root]");
   return { root, errors };
 }
 
@@ -948,10 +948,10 @@ function main({
   readonly errors: readonly string[];
 }): number {
   if (errors.length > 0) {
-    process.stderr.write(`${errors.join('\n')}\n`);
+    process.stderr.write(`${errors.join("\n")}\n`);
     return 1;
   }
-  const display = (path: string): string => relative(root, path).split(sep).join('/');
+  const display = (path: string): string => relative(root, path).split(sep).join("/");
   const files = listFiles(root);
   const plans: ContractPlan[] = [];
   const notices: string[] = [];
@@ -959,7 +959,7 @@ function main({
   let contractsFound = 0;
 
   for (const path of files.json) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const contract = parseJson(text);
     if (
       contract === undefined &&
@@ -970,15 +970,15 @@ function main({
     }
     if (
       !isRecord(contract) ||
-      contract['targetFamily'] !== 'sql' ||
-      contract['target'] !== 'sqlite' ||
-      !isRecord(contract['storage'])
+      contract["targetFamily"] !== "sql" ||
+      contract["target"] !== "sqlite" ||
+      !isRecord(contract["storage"])
     )
       continue;
     contractsFound++;
     const snapshot = isSnapshotContract(path);
-    const stored = contract['storage']['storageHash'];
-    const oldHash = snapshot ? basename(dirname(path)) : typeof stored === 'string' ? stored : '';
+    const stored = contract["storage"]["storageHash"];
+    const oldHash = snapshot ? basename(dirname(path)) : typeof stored === "string" ? stored : "";
     const rewrite = rewriteContract(contract);
     if (!rewrite.changed) continue;
     if (computeStorageHash(contract) !== oldHash)
@@ -1009,11 +1009,11 @@ function main({
   const contractWrites = new Map<string, string>();
   for (const plan of plans) {
     const dtsPath = plan.snapshot
-      ? join(dirname(plan.path), 'contract.d.ts')
-      : `${plan.path.slice(0, -'.json'.length)}.d.ts`;
+      ? join(dirname(plan.path), "contract.d.ts")
+      : `${plan.path.slice(0, -".json".length)}.d.ts`;
     const dtsHashes = plan.snapshot ? hashes : new Map([...hashes, [plan.oldHash, plan.newHash]]);
     const dts = existsSync(dtsPath)
-      ? rewriteDts(readFileSync(dtsPath, 'utf8'), plan.datetimeEnums, dtsHashes)
+      ? rewriteDts(readFileSync(dtsPath, "utf8"), plan.datetimeEnums, dtsHashes)
       : undefined;
     if (!plan.snapshot) {
       if (dts !== undefined) referenceWrites.set(dtsPath, dts);
@@ -1030,8 +1030,8 @@ function main({
     }
     removals.add(oldDir);
     const content = readDirectory(oldDir);
-    content.set('contract.json', plan.content);
-    if (dts !== undefined) content.set('contract.d.ts', dts);
+    content.set("contract.json", plan.content);
+    if (dts !== undefined) content.set("contract.d.ts", dts);
     const planned = newDirectories.get(newDir);
     if (planned !== undefined && !sameFiles(planned, content)) {
       stops.push(`${display(newDir)}: snapshot directory already exists with different content`);
@@ -1047,25 +1047,25 @@ function main({
   }
 
   for (const path of files.migrationJson) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const metadata = parseJson(text);
     if (!isRecord(metadata)) continue;
-    const from = metadata['from'];
-    const to = metadata['to'];
-    const nextFrom = typeof from === 'string' ? (hashes.get(from) ?? from) : from;
-    const nextTo = typeof to === 'string' ? (hashes.get(to) ?? to) : to;
+    const from = metadata["from"];
+    const to = metadata["to"];
+    const nextFrom = typeof from === "string" ? (hashes.get(from) ?? from) : from;
+    const nextTo = typeof to === "string" ? (hashes.get(to) ?? to) : to;
     if (nextFrom === from && nextTo === to) continue;
-    const opsPath = join(dirname(path), 'ops.json');
-    const ops = existsSync(opsPath) ? parseJson(readFileSync(opsPath, 'utf8')) : undefined;
+    const opsPath = join(dirname(path), "ops.json");
+    const ops = existsSync(opsPath) ? parseJson(readFileSync(opsPath, "utf8")) : undefined;
     if (existsSync(opsPath) && ops === undefined) {
       stops.push(`${display(opsPath)}: not valid JSON`);
       continue;
     }
-    const oldMigrationHash = metadata['migrationHash'];
+    const oldMigrationHash = metadata["migrationHash"];
     let next = replaceQuotedHashes(text, hashes);
     if (
       ops !== undefined &&
-      typeof oldMigrationHash === 'string' &&
+      typeof oldMigrationHash === "string" &&
       nextFrom !== undefined &&
       nextTo !== undefined
     ) {
@@ -1075,12 +1075,12 @@ function main({
     referenceWrites.set(path, next);
   }
   for (const path of files.refs) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const next = replaceQuotedHashes(text, hashes);
     if (next !== text) referenceWrites.set(path, next);
   }
   for (const path of files.migrationTs) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const next = text.replace(
       /(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])/g,
       (hash: string) => hashes.get(hash) ?? hash,
@@ -1089,7 +1089,7 @@ function main({
   }
 
   if (stops.length > 0) {
-    process.stderr.write(`${[...new Set(stops)].join('\n')}\n`);
+    process.stderr.write(`${[...new Set(stops)].join("\n")}\n`);
     return 1;
   }
 
@@ -1113,7 +1113,7 @@ function main({
     ...notices,
     ...summary(root, contractsFound, rewrittenFiles, removals.size, hashes),
   ];
-  process.stdout.write(`${lines.join('\n')}\n`);
+  process.stdout.write(`${lines.join("\n")}\n`);
   return 0;
 }
 

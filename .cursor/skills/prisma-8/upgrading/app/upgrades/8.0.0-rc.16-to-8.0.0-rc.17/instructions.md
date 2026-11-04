@@ -246,7 +246,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
-        - 'Cannot (?:define|apply) (?:the|a) scope|Pass the scope to with|Run the scope with apply|A scope (?:passed to with|applied with apply)|The scope was (?:made|declared)|the scope could not read the model|declaration in the scope'
+        - "Cannot (?:define|apply) (?:the|a) scope|Pass the scope to with|Run the scope with apply|A scope (?:passed to with|applied with apply)|The scope was (?:made|declared)|the scope could not read the model|declaration in the scope"
   - id: orm-collections-lock-rows
     summary: "ORM collections gain forUpdate(), forNoKeyUpdate(), forShare() and forKeyShare(), which need the same capability keys as the SQL builder's row-locking methods and also sql.lockOf; a contract emitted before this release does not carry them and the methods are unavailable against it, so re-emit the contract before using them."
     detection:
@@ -311,13 +311,13 @@ Earlier versions stored such a member in that form, so rewrite it as the message
 
 A default is converted rather than refused, as a uuid default already is:
 
-| Written | Stored |
-| --- | --- |
-| `.default('01.5')` on `pg/numeric@1` | `"1.5"` |
-| `.default('-0')` on `pg/numeric@1` | `"0"` |
-| `@default("10.0.0.1/32")` on `Inet`, or `.default('10.0.0.1/32')` on `pg/inet@1` | `"10.0.0.1"` |
-| `@default("::FFFF:10.0.0.1")` on `Inet`, or the same `.default()` on `pg/inet@1` | `"::ffff:10.0.0.1"` |
-| `@default("not an address")` on `Inet` | refused, `PSL_INVALID_LITERAL` |
+| Written                                                                          | Stored                         |
+| -------------------------------------------------------------------------------- | ------------------------------ |
+| `.default('01.5')` on `pg/numeric@1`                                             | `"1.5"`                        |
+| `.default('-0')` on `pg/numeric@1`                                               | `"0"`                          |
+| `@default("10.0.0.1/32")` on `Inet`, or `.default('10.0.0.1/32')` on `pg/inet@1` | `"10.0.0.1"`                   |
+| `@default("::FFFF:10.0.0.1")` on `Inet`, or the same `.default()` on `pg/inet@1` | `"::ffff:10.0.0.1"`            |
+| `@default("not an address")` on `Inet`                                           | refused, `PSL_INVALID_LITERAL` |
 
 A PSL numeric default was already converted: `@default(01.5)` was stored as `"1.5"`.
 
@@ -457,8 +457,8 @@ Code that builds the Mongo ORM itself, rather than through `mongo()`, passes the
 Before:
 
 ```ts
-import { createMongoExecutionContext, createMongoRuntime } from '@prisma/orm-mongo/family-runtime';
-import { mongoOrm } from '@prisma/orm-mongo/orm';
+import { createMongoExecutionContext, createMongoRuntime } from "@prisma/orm-mongo/family-runtime";
+import { mongoOrm } from "@prisma/orm-mongo/orm";
 
 const context = createMongoExecutionContext({ contract, stack });
 const runtime = createMongoRuntime({ context, driver });
@@ -472,12 +472,16 @@ import {
   buildMongoEnums,
   createMongoExecutionContext,
   createMongoRuntime,
-} from '@prisma/orm-mongo/family-runtime';
-import { mongoOrm } from '@prisma/orm-mongo/orm';
+} from "@prisma/orm-mongo/family-runtime";
+import { mongoOrm } from "@prisma/orm-mongo/orm";
 
 const context = createMongoExecutionContext({ contract, stack });
 const runtime = createMongoRuntime({ context, driver });
-const orm = mongoOrm({ contract, executor: runtime, enums: buildMongoEnums(contract, context.codecs) });
+const orm = mongoOrm({
+  contract,
+  executor: runtime,
+  enums: buildMongoEnums(contract, context.codecs),
+});
 ```
 
 `buildMongoEnums` refuses a contract whose enum codec the context lacks with `RUNTIME.CODEC_DESCRIPTOR_MISSING`. `createMongoCollection()` takes the accessors as its fourth argument, before the optional `mutationDefaults`: change `createMongoCollection(contract, 'User', executor, mutationDefaults)` to `createMongoCollection(contract, 'User', executor, enums, mutationDefaults)`. `mongoOrm()` refuses `enums` that lack an accessor for an enum the contract declares with `ORM.ARGUMENT_INVALID` when it is called; `createMongoCollection()` refuses a write of an enum field whose accessor is missing from `enums` with the same error.
@@ -547,6 +551,7 @@ The next `prisma migration plan` creates `Post_authorId_idx_e47547ed`. If that i
   ```
 
   In a TypeScript contract, pass the same name: `rel.belongsTo(User, { from: 'authorId', to: 'id' }).sql({ fk: { index: 'post_author_live' } })` or `constraints.foreignKey(cols.authorId, User.refs.id, { index: 'post_author_live' })`.
+
 - To have no backing index at all, write `index: false` on the relation, or `fk: { index: false }` in TypeScript.
 
 The name is the `name` or `map` you gave the index, unique constraint or primary key, or an index's stored name from `contract.json`. The default name of an index you did not name does not count. `prisma contract emit` refuses a name that the table does not have, that an index and a key share, or whose object's first columns are not the foreign key's columns.
@@ -735,7 +740,7 @@ The ORM client's collections gain four methods that lock the rows a read selects
 
 ```ts
 await db.transaction(async (tx) => {
-  const job = await tx.orm.public.Job.where({ state: 'queued' })
+  const job = await tx.orm.public.Job.where({ state: "queued" })
     .orderBy((j) => j.createdAt.asc())
     .forUpdate({ skipLocked: true })
     .first();

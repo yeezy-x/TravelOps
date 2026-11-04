@@ -102,7 +102,7 @@ changes:
         - '(?<![\w$.])createMongoCollection\s*(?:<[^>()]*>)?\s*\(\s*(?!\{)'
         - '(?<![\w$])mutationDefaults\s*:'
         - '(?<![\w$])MongoOrmEnums(?![\w$])'
-        - 'MUTATION_DEFAULTS_MISSING'
+        - "MUTATION_DEFAULTS_MISSING"
   - id: mongo-runtime-takes-adapter
     summary: |
       `MongoRuntimeOptions` is `{ context, adapter, driver, middleware?, mode? }`, as the SQL runtime's options are: the caller creates the adapter with `stack.adapter.create(stack)`, and the runtime checks middleware against `context.contract.target`, so `context` is a `MongoExecutionContext<MongoContract>`. `MongoExecutionContext` is declared in `@prisma/orm-family-mongo/query-ast/execution` (`@internal/mongo-query-ast/execution`), still exported from the runtime entry; it has no `stack` member and no second type parameter (`TTargetId`), and its type parameter is constrained as SQL's `ExecutionContext` is: `MongoExecutionContext<TContract extends MongoContract = MongoContract>`, and `createMongoExecutionContext` takes the same constraint. `createMongoExecutionStack()` still takes an optional `driver`; given one, it returns `MongoExecutionStackWithDriver`, whose `driver` is always set, and without one it returns `MongoExecutionStack`, which has no `driver` member, as `createSqlExecutionStack()` does. `buildMongoEnums()` and `MongoEnumAccessors` are removed, and `MongoExecutionContext` has no `enums` member, as SQL's `ExecutionContext` has none: the static context builds `db.enums` with the framework's `buildNamespacedEnums`, as `postgresStatic()` does, and the ORM builds the accessors it checks writes against from the context, once per client. The detection matches files that call `createMongoRuntime(`, read `.stack` from a context, give `MongoExecutionContext` two type arguments or a non-contract type argument, or name `buildMongoEnums` or `MongoEnumAccessors`.
@@ -135,14 +135,13 @@ changes:
       glob: "**/*.{ts,mts,cts,tsx,js,mjs,cjs}"
       matches:
         - 'DRIVER\.ALREADY_CONNECTED'
-        - '(?:Postgres|SQLite|MySQL|Mongo) client already connected'
+        - "(?:Postgres|SQLite|MySQL|Mongo) client already connected"
         - 'Call connect\(\) at most once per client'
 ---
 
 # 8.0.0-rc.21 → 8.0.0-rc.22 — Extension author upgrade instructions
 
 No change in this guide comes with a script. Make the changes below in any order.
-
 
 ## Value objects are storage entities
 
@@ -157,7 +156,10 @@ contractFieldToMongoFieldShape(field, valueObjects);
 compileMongoQuery(collection, state, storageHash, model, valueObjects);
 
 // after
-contractModelToMongoResultShape(model, { includes: { author: authorShape }, storage: contract.storage });
+contractModelToMongoResultShape(model, {
+  includes: { author: authorShape },
+  storage: contract.storage,
+});
 contractFieldToMongoFieldShape(field, contract.storage);
 compileMongoQuery(collection, state, storageHash, model, contract.storage);
 ```
@@ -168,10 +170,10 @@ A value object field's shape is a document of its fields when `storage` holds th
 
 ```ts
 // before
-import type { PostgresCheckExpressionInput } from '@prisma/orm-postgres/target/types';
+import type { PostgresCheckExpressionInput } from "@prisma/orm-postgres/target/types";
 
 // after
-import type { CheckExpressionInput } from '@prisma/orm-postgres/family-contract/check-expressions';
+import type { CheckExpressionInput } from "@prisma/orm-postgres/family-contract/check-expressions";
 ```
 
 `postgresRenderCheckExpressions` stays in `@prisma/orm-postgres/target/types`. Its input also takes `valueObject`, a `ResolvedColumnValueObject` (the column's nullability, whether its JSON value is an array, and the value object), or `undefined`.
@@ -180,14 +182,45 @@ import type { CheckExpressionInput } from '@prisma/orm-postgres/family-contract/
 
 ```ts
 // before
-import type { FieldTypesFromDomain, ValueObjectTypesFromDomain } from '@prisma/orm-framework/contract/types';
-type Fields = FieldTypesFromDomain<Contract['domain']['namespaces'], CodecTypes, Parameterized, Overrides, 'output'>;
-type ValueObjects = ValueObjectTypesFromDomain<Contract['domain']['namespaces'], CodecTypes, Parameterized, Overrides, 'output'>;
+import type {
+  FieldTypesFromDomain,
+  ValueObjectTypesFromDomain,
+} from "@prisma/orm-framework/contract/types";
+type Fields = FieldTypesFromDomain<
+  Contract["domain"]["namespaces"],
+  CodecTypes,
+  Parameterized,
+  Overrides,
+  "output"
+>;
+type ValueObjects = ValueObjectTypesFromDomain<
+  Contract["domain"]["namespaces"],
+  CodecTypes,
+  Parameterized,
+  Overrides,
+  "output"
+>;
 
 // after
-import type { FieldTypesFromDomain, ValueObjectTypesFromStorage } from '@prisma/orm-framework/contract/types';
-type Fields = FieldTypesFromDomain<Contract['domain']['namespaces'], CodecTypes, Parameterized, Overrides, 'output', Contract['storage']['namespaces']>;
-type ValueObjects = ValueObjectTypesFromStorage<Contract['storage']['namespaces'], CodecTypes, Parameterized, Overrides, 'output'>;
+import type {
+  FieldTypesFromDomain,
+  ValueObjectTypesFromStorage,
+} from "@prisma/orm-framework/contract/types";
+type Fields = FieldTypesFromDomain<
+  Contract["domain"]["namespaces"],
+  CodecTypes,
+  Parameterized,
+  Overrides,
+  "output",
+  Contract["storage"]["namespaces"]
+>;
+type ValueObjects = ValueObjectTypesFromStorage<
+  Contract["storage"]["namespaces"],
+  CodecTypes,
+  Parameterized,
+  Overrides,
+  "output"
+>;
 ```
 
 Pass the sixth argument for every contract, with value objects or without. `FieldTypeOverrides` has two kinds of key at its top level. Under `models`, the key is the domain namespace of the model. Under `valueObjects`, the key is the storage namespace that holds the value object. These can differ. On SQL every value object is stored in the default storage namespace, such as `public` on Postgres, whatever the namespace of the model that holds it. On MongoDB it is `__unbound__`.
@@ -195,8 +228,16 @@ Pass the sixth argument for every contract, with value objects or without. `Fiel
 ```ts
 // a model `User` in the PSL namespace `billing`, with an `Address` field, on Postgres
 type FieldTypeOverrides = {
-  readonly billing: { readonly models: { readonly User: { readonly status: { readonly output: 'active' | 'closed' } } } };
-  readonly public: { readonly valueObjects: { readonly Address: { readonly kind: { readonly output: 'home' | 'work' } } } };
+  readonly billing: {
+    readonly models: {
+      readonly User: { readonly status: { readonly output: "active" | "closed" } };
+    };
+  };
+  readonly public: {
+    readonly valueObjects: {
+      readonly Address: { readonly kind: { readonly output: "home" | "work" } };
+    };
+  };
 };
 ```
 
@@ -204,17 +245,17 @@ type FieldTypeOverrides = {
 
 ```ts
 // before
-import type { ValueObjectFieldType } from '@prisma/orm-framework/contract/types';
-const reference: ValueObjectFieldType = { kind: 'valueObject', name: 'Address' };
+import type { ValueObjectFieldType } from "@prisma/orm-framework/contract/types";
+const reference: ValueObjectFieldType = { kind: "valueObject", name: "Address" };
 
 // after
-import type { ValueObjectReference } from '@prisma/orm-framework/contract/types';
+import type { ValueObjectReference } from "@prisma/orm-framework/contract/types";
 const reference: ValueObjectReference = {
-  kind: 'valueObject',
-  plane: 'storage',
-  namespaceId: 'public',
-  entityKind: 'valueObject',
-  entityName: 'Address',
+  kind: "valueObject",
+  plane: "storage",
+  namespaceId: "public",
+  entityKind: "valueObject",
+  entityName: "Address",
 };
 ```
 
@@ -223,34 +264,32 @@ const reference: ValueObjectReference = {
 ```ts
 // before
 export class CitextDescriptor extends PostgresCodecDescriptor<void> {
-  override readonly codecId = 'citext/text@1';
+  override readonly codecId = "citext/text@1";
   // ...
 }
 
 // after
 export class CitextDescriptor extends PostgresCodecDescriptor<void> {
-  override readonly jsonType = 'string' as const;
-  override readonly codecId = 'citext/text@1';
+  override readonly jsonType = "string" as const;
+  override readonly codecId = "citext/text@1";
   // ...
 }
 ```
 
 Declare the type the codec's value is written as when the application value is turned into JSON: a vector is `'array'`, a geometry and bytes are `'object'`, and a JSON codec is `'any'`. A template passed to `postgresCodec(template, options)` declares `jsonType` itself, as the `sql/*` family codecs do.
 
-
 ## A SQL stack with a driver always has one
 
 ```ts
 // Before
-const stack: SqlExecutionStackWithDriver<'postgres'> = createSqlExecutionStack({ target, adapter });
-if (!stack.driver) throw new Error('Driver descriptor missing from execution stack');
+const stack: SqlExecutionStackWithDriver<"postgres"> = createSqlExecutionStack({ target, adapter });
+if (!stack.driver) throw new Error("Driver descriptor missing from execution stack");
 
 // After
-const staticStack: SqlExecutionStack<'postgres'> = createSqlExecutionStack({ target, adapter });
+const staticStack: SqlExecutionStack<"postgres"> = createSqlExecutionStack({ target, adapter });
 const clientStack = createSqlExecutionStack({ target, adapter, driver });
 const driverInstance = clientStack.driver.create();
 ```
-
 
 ## Declare a pack's Postgres extension in its contract
 
@@ -259,15 +298,14 @@ const driverInstance = clientStack.driver.create();
 export const contract = defineContract(config, () => ({ models: {} }));
 
 // After
-import { defineContract, extension } from '@prisma/orm-postgres/contract-builder';
+import { defineContract, extension } from "@prisma/orm-postgres/contract-builder";
 export const contract = defineContract(config, () => ({
   models: {},
-  entities: [extension('vector')],
+  entities: [extension("vector")],
 }));
 ```
 
 After emitting the pack's contract, plan from the old head and from the empty contract, keep the old install migration in the descriptor, and list the two new migrations beside it. The head ref lists no invariants.
-
 
 ## Create a Mongo runtime driver from its descriptor
 
@@ -275,13 +313,16 @@ Put the descriptor on the execution stack, create the driver from the stack, and
 
 ```ts
 // Before
-import { createMongoDriver } from '@prisma/orm-target-mongo/driver';
+import { createMongoDriver } from "@prisma/orm-target-mongo/driver";
 
-const stack = createMongoExecutionStack({ target: mongoRuntimeTarget, adapter: mongoRuntimeAdapter });
+const stack = createMongoExecutionStack({
+  target: mongoRuntimeTarget,
+  adapter: mongoRuntimeAdapter,
+});
 const driver = await createMongoDriver(url, dbName);
 
 // After
-import mongoRuntimeDriver from '@prisma/orm-target-mongo/driver/runtime';
+import mongoRuntimeDriver from "@prisma/orm-target-mongo/driver/runtime";
 
 const stack = createMongoExecutionStack({
   target: mongoRuntimeTarget,
@@ -289,7 +330,7 @@ const stack = createMongoExecutionStack({
   driver: mongoRuntimeDriver,
 });
 const driver = stack.driver.create();
-await driver.connect({ kind: 'url', url, dbName });
+await driver.connect({ kind: "url", url, dbName });
 ```
 
 Replace `MongoDriverImpl.fromDb(client.db(dbName))` with `driver.connect({ kind: 'mongoClient', client, dbName })` on a driver created the same way. Code that only sends DDL through a control adapter can use the control driver instead: `await mongoControlDriver.create(url)`, with `mongoControlDriver` the default export of `@prisma/orm-target-mongo/driver/control`. The control driver uses the database the URL names, so put `dbName` in the URL's path, for example `mongodb://localhost:27017/app`.
@@ -303,12 +344,12 @@ Code that only sends commands takes `MongoQueryable`, so it accepts a control dr
 ```ts
 // Before
 async function seed(driver: MongoDriver): Promise<void> {
-  await driver.run(new CreateCollectionWireCommand('users', {}));
+  await driver.run(new CreateCollectionWireCommand("users", {}));
 }
 
 // After
 async function seed(driver: MongoQueryable): Promise<void> {
-  await driver.run(new CreateCollectionWireCommand('users', {}));
+  await driver.run(new CreateCollectionWireCommand("users", {}));
 }
 ```
 
@@ -337,24 +378,23 @@ class StubMongoDriver implements MongoDriver {
 }
 ```
 
-
 ## The MongoDB query surfaces and runtime take an execution context
 
 `mongoQuery`, `mongoRaw` and `mongoOrm` take `{ context }`, a MongoDB execution context, instead of `{ contract }`, as `sql({ context })` and the SQL ORM do. The context comes from `mongoStatic({ contract })` or `mongo({ contract })`, which validate the contract once.
 
 ```ts
 // Before
-import { mongoQuery } from '@prisma/orm-mongo/query-builder';
+import { mongoQuery } from "@prisma/orm-mongo/query-builder";
 const query = mongoQuery({ contract });
 const raw = mongoRaw({ contract });
 
 // After
-import mongoStatic from '@prisma/orm-mongo/static';
+import mongoStatic from "@prisma/orm-mongo/static";
 const { query, raw } = mongoStatic({ contract });
 
 // Or, with a client
 const db = mongo({ contract, url });
-db.query.from('orders');
+db.query.from("orders");
 ```
 
 Code that builds the ORM itself passes the context, which also fills generated fields:
@@ -362,11 +402,11 @@ Code that builds the ORM itself passes the context, which also fills generated f
 ```ts
 // Before
 const orm = mongoOrm({ contract, executor, mutationDefaults: context, enums });
-const users = createMongoCollection(contract, 'User', executor, enums, context);
+const users = createMongoCollection(contract, "User", executor, enums, context);
 
 // After, as the SQL orm({ context, runtime })
 const orm = mongoOrm({ context, runtime: executor });
-const users = createMongoCollection({ context, runtime: executor }, 'User');
+const users = createMongoCollection({ context, runtime: executor }, "User");
 ```
 
 The runtime takes an adapter beside the context, as the SQL runtime does, and reads the target from the context's contract:
@@ -383,7 +423,6 @@ const runtime = createMongoRuntime({ context, adapter: stack.adapter.create(stac
 
 `MongoExecutionContext` takes one type parameter, a MongoDB contract: `MongoExecutionContext<Contract>`.
 
-
 ## MongoDB index identity: one refusal gone, four names moved
 
 ### `mongo-build-refusal-index-duplicate-removed`
@@ -392,7 +431,7 @@ Code that switches over `refusal.kind` no longer compiles while it names `indexD
 
 ```typescript
 switch (refusal.kind) {
-  case 'indexShape':
+  case "indexShape":
     return describeShape(refusal);
   // remove: case 'indexDuplicate': ...
 }
@@ -403,10 +442,9 @@ switch (refusal.kind) {
 The contract builder, the planner and the verifier now identify an index by one function in the contract package. Move these names to the `contract` import:
 
 ```typescript
-import { MongoSchemaIndex } from '@prisma/orm-family-mongo/schema-ir';
-import { indexLookupKey } from '@prisma/orm-family-mongo/contract';
+import { MongoSchemaIndex } from "@prisma/orm-family-mongo/schema-ir";
+import { indexLookupKey } from "@prisma/orm-family-mongo/contract";
 ```
-
 
 ## `connect()` on a client is safe to call again
 
@@ -425,8 +463,8 @@ Replace an assertion on the old message with the new one:
 
 ```ts
 // Before
-await expect(db.connect({ url })).rejects.toThrow('Postgres client already connected');
+await expect(db.connect({ url })).rejects.toThrow("Postgres client already connected");
 
 // After
-await expect(db.connect({ url })).rejects.toThrow('Postgres client is already bound');
+await expect(db.connect({ url })).rejects.toThrow("Postgres client is already bound");
 ```

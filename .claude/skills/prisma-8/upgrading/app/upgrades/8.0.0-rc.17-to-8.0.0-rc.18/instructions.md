@@ -250,7 +250,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,js,mjs,cjs}"
       matches:
-        - '--delete loses its rows'
+        - "--delete loses its rows"
   - id: migration-ts-finds-its-config
     summary: |
       Running a `migration.ts` with node and no `--config` uses the config that owns the migration, whose migrations directory holds the file: the nearest `prisma.config.ts` above the migration's directory, else the one in the working directory. If neither owns it, it fails with `CLI.MIGRATION_CONFIG_NOT_FOUND`. It used to load only the working directory's config, whichever project it belonged to.
@@ -303,14 +303,14 @@ On Postgres, `unbound` and `__unbound__` are rejected only when the schema also 
 
 Raw SQL in a PSL schema is written as a `sql` literal, the form `@default` already uses. A quoted string is refused in these places:
 
-| Place | Before | After |
-| --- | --- | --- |
-| `@@index(where:)` | `@@index([email], where: "(archived_at IS NULL)", name: "users_email_active")` | ``@@index([email], where: sql`(archived_at IS NULL)`, name: "users_email_active")`` |
-| `@@index(expression:)` | `@@index(expression: "lower(email)", name: "users_email_lower")` | ``@@index(expression: sql`lower(email)`, name: "users_email_lower")`` |
+| Place                     | Before                                                                                    | After                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `@@index(where:)`         | `@@index([email], where: "(archived_at IS NULL)", name: "users_email_active")`            | ``@@index([email], where: sql`(archived_at IS NULL)`, name: "users_email_active")``            |
+| `@@index(expression:)`    | `@@index(expression: "lower(email)", name: "users_email_lower")`                          | ``@@index(expression: sql`lower(email)`, name: "users_email_lower")``                          |
 | `@@fullTextIndex(where:)` | `@@fullTextIndex([text], where: "archived_at IS NULL", name: "message_text_search_live")` | ``@@fullTextIndex([text], where: sql`archived_at IS NULL`, name: "message_text_search_live")`` |
-| `@@check(expression:)` | `@@check(expression: "total > 0", name: "order_total_positive")` | ``@@check(expression: sql`total > 0`, name: "order_total_positive")`` |
-| a policy's `using` | `using = "\"userId\"::uuid = auth.uid()"` | ``using = sql`"userId"::uuid = auth.uid()` `` |
-| a policy's `withCheck` | `withCheck = "\"userId\"::uuid = auth.uid()"` | ``withCheck = sql`"userId"::uuid = auth.uid()` `` |
+| `@@check(expression:)`    | `@@check(expression: "total > 0", name: "order_total_positive")`                          | ``@@check(expression: sql`total > 0`, name: "order_total_positive")``                          |
+| a policy's `using`        | `using = "\"userId\"::uuid = auth.uid()"`                                                 | ``using = sql`"userId"::uuid = auth.uid()` ``                                                  |
+| a policy's `withCheck`    | `withCheck = "\"userId\"::uuid = auth.uid()"`                                             | ``withCheck = sql`"userId"::uuid = auth.uid()` ``                                              |
 
 Inside a `sql` literal no quote is escaped: `\"` becomes `"`. A literal may span lines.
 
@@ -351,19 +351,19 @@ After emitting the rewritten schema, run `prisma migration plan` once and commit
 
 Every field of the TypeScript contract builder that holds raw SQL takes a `sql` value, as `.default()` already did. Wrap each string in the `sql` tag, imported from the same contract-builder module as the other helpers:
 
-| Place | Before | After |
-| --- | --- | --- |
-| `index` `where` | `constraints.index([cols.email], { where: '(archived_at IS NULL)', name: 'users_email_active' })` | ``constraints.index([cols.email], { where: sql`(archived_at IS NULL)`, name: 'users_email_active' })`` |
-| `index` `expression` | `constraints.index({ expression: 'lower(email)', name: 'users_email_lower' })` | ``constraints.index({ expression: sql`lower(email)`, name: 'users_email_lower' })`` |
-| `fullTextIndex` `where` | `fullTextIndex(cols.text, { where: 'archived_at IS NULL', name: 'message_text_search_live' })` | ``fullTextIndex(cols.text, { where: sql`archived_at IS NULL`, name: 'message_text_search_live' })`` |
-| `check` `expression` | `check({ expression: 'total > 0', name: 'order_total_positive' })` | ``check({ expression: sql`total > 0`, name: 'order_total_positive' })`` |
+| Place                              | Before                                                                                                                | After                                                                                                                      |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `index` `where`                    | `constraints.index([cols.email], { where: '(archived_at IS NULL)', name: 'users_email_active' })`                     | ``constraints.index([cols.email], { where: sql`(archived_at IS NULL)`, name: 'users_email_active' })``                     |
+| `index` `expression`               | `constraints.index({ expression: 'lower(email)', name: 'users_email_lower' })`                                        | ``constraints.index({ expression: sql`lower(email)`, name: 'users_email_lower' })``                                        |
+| `fullTextIndex` `where`            | `fullTextIndex(cols.text, { where: 'archived_at IS NULL', name: 'message_text_search_live' })`                        | ``fullTextIndex(cols.text, { where: sql`archived_at IS NULL`, name: 'message_text_search_live' })``                        |
+| `check` `expression`               | `check({ expression: 'total > 0', name: 'order_total_positive' })`                                                    | ``check({ expression: sql`total > 0`, name: 'order_total_positive' })``                                                    |
 | a policy's `using` and `withCheck` | `policySelect(Profile, { name: 'profile_owner_read', roles: [authenticated], using: '"userId"::uuid = auth.uid()' })` | ``policySelect(Profile, { name: 'profile_owner_read', roles: [authenticated], using: sql`"userId"::uuid = auth.uid()` })`` |
 
 ```ts
-import { check, policySelect, sql } from '@prisma/orm-postgres/contract-builder';
+import { check, policySelect, sql } from "@prisma/orm-postgres/contract-builder";
 ```
 
-Copy the string's value, not its source: undo the TypeScript string's own escaping first, so `'"userId"'` and `"\"userId\""` both become `` sql`"userId"` ``. Inside the template, write each backtick as `` \` ``, each `${` as `\${`, and a backslash that precedes a backtick, a dollar sign or another backslash as `\\`; every other backslash is kept as written, so `E'\n'` stays `E'\n'`. An index or check object written by hand in `.sql({ indexes, checks })` takes a `sql` value in the same fields. A shared predicate held in a `const` becomes a `sql` value too: `` const owner = sql`"userId"::uuid = auth.uid()`; ``.
+Copy the string's value, not its source: undo the TypeScript string's own escaping first, so `'"userId"'` and `"\"userId\""` both become `` sql`"userId"` ``. Inside the template, write each backtick as `` \` ``, each `${` as `\${`, and a backslash that precedes a backtick, a dollar sign or another backslash as `\\`; every other backslash is kept as written, so `E'\n'` stays `E'\n'`. An index or check object written by hand in `.sql({ indexes, checks })` takes a `sql` value in the same fields. A shared predicate held in a `const` becomes a `sql` value too: ``const owner = sql`"userId"::uuid = auth.uid()`;``.
 
 Skip files under a `migrations/` folder and leave them as they are: migration functions take a string or a `sql` value, and a string keeps its exact text, while wrapping it in `sql` canonicalizes it, which can change the SQL that migration runs.
 
@@ -399,7 +399,7 @@ A `sql` value stores its canonical text, as a PSL `sql` literal does: indentatio
 A column default whose text a `sql` literal cannot write back unchanged, for example a string constant holding a carriage return or a whitespace-only line, is treated differently by the two commands that write PSL, for the reason ADR 268 gives ("Column defaults that do not read back"):
 
 - `contract infer` still writes the default as a `sql` literal and adds the comment `// prisma: default of "<column>" holds text a sql literal cannot write back unchanged; check its string constants before applying a migration` to the model. The literal reads back as a different constant, so a database created from the inferred schema gets that constant. Check the constant, and fix it in the schema or in the database before you apply a migration planned from it.
-- `contract print` refuses the default with `CONTRACT.PRINT_UNSUPPORTED` (``default of column "public"."post"."slug" holds SQL that a sql literal cannot write back unchanged``). Write the default in its canonical form in the contract's source. A contract holds such a default only when it was built before this release, or through `.default({ kind: 'function', expression })` or `.defaultSql('...')`.
+- `contract print` refuses the default with `CONTRACT.PRINT_UNSUPPORTED` (`default of column "public"."post"."slug" holds SQL that a sql literal cannot write back unchanged`). Write the default in its canonical form in the contract's source. A contract holds such a default only when it was built before this release, or through `.default({ kind: 'function', expression })` or `.defaultSql('...')`.
 
 This applies to projects that write only PSL as well as TypeScript projects.
 
@@ -759,7 +759,7 @@ What to write instead:
 
   ```ts
   if (maybeHandle === null) {
-    throw new Error('an account needs a handle to be connected');
+    throw new Error("an account needs a handle to be connected");
   }
   await db.orm.Owner.where({ id }).update({
     accounts: (accounts) => accounts.connect({ handle: maybeHandle }),
@@ -813,14 +813,14 @@ The runtime now runs every statement and every transaction as an **activity**. A
 
 ### Rename the hooks
 
-| Before | After |
-|---|---|
-| `beforeQuery`, `beforeExecute` | `beforeEncode` |
+| Before                               | After                                      |
+| ------------------------------------ | ------------------------------------------ |
+| `beforeQuery`, `beforeExecute`       | `beforeEncode`                             |
 | `interceptQuery`, `interceptExecute` | `intercept.onQuery`, `intercept.onExecute` |
-| `onRow` | `onRow` |
-| `afterQuery`, `afterExecute` | `activityEnded` on a statement |
-| `afterTransaction` | `activityFinalized` on a statement |
-| `beforeCompile` | `beforeCompile` |
+| `onRow`                              | `onRow`                                    |
+| `afterQuery`, `afterExecute`         | `activityEnded` on a statement             |
+| `afterTransaction`                   | `activityFinalized` on a statement         |
+| `beforeCompile`                      | `beforeCompile`                            |
 
 `beforeEncode` keeps the arguments of `beforeQuery` and `beforeExecute`: the lowered plan, the context and the parameter mutator. It runs for both `query()` and `execute()`. A middleware that defined both `beforeQuery` and `beforeExecute` with the same body defines `beforeEncode` once. A middleware that must tell them apart reads `activity.returns` (`'rows'` or `'stats'`) in `activityStarted` and keeps it in `ctx.state`.
 

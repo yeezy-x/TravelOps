@@ -61,7 +61,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts}"
       matches:
-        - "['\"]mongo/(?:double|int32)@1['\"]"
+        - '[''"]mongo/(?:double|int32)@1[''"]'
   - id: mongo-insert-results-carry-documents
     summary: |
       `InsertOneResult` and `InsertManyResult` (`@prisma/orm-mongo/query-ast/execution`,

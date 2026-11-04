@@ -10,7 +10,7 @@
  *
  * The storage hash and migration hash rules are copied from `@internal/contract` and `@internal/migration-tools` because a project's strict `node_modules` does not expose them.
  */
-import { createHash } from 'node:crypto';
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   type Dirent,
@@ -23,22 +23,22 @@ import {
   rmSync,
   statSync,
   writeFileSync,
-} from 'node:fs';
-import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+} from "node:fs";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 type Json = null | boolean | number | string | Json[] | JsonRecord;
 interface JsonRecord {
   [key: string]: Json;
 }
 
-const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist', 'build']);
-const APP_SPACE_ID = 'app';
+const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build"]);
+const APP_SPACE_ID = "app";
 const HASH = /^[0-9a-f]{64}$/;
-const TEMPORARY_SUFFIX = '.expand-type-aliases-tmp';
-const BYTE_ORDER_MARK = '\uFEFF';
+const TEMPORARY_SUFFIX = ".expand-type-aliases-tmp";
+const BYTE_ORDER_MARK = "\uFEFF";
 
 function isRecord(value: unknown): value is JsonRecord {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
@@ -57,7 +57,7 @@ function parseJson(text: string): Json | undefined {
 }
 
 function sha256(text: string): string {
-  return createHash('sha256').update(text).digest('hex');
+  return createHash("sha256").update(text).digest("hex");
 }
 
 function compareCodeUnits(a: string, b: string): number {
@@ -86,59 +86,59 @@ function matchesPath(path: readonly string[], pattern: readonly PathSegment[]): 
   return pattern.every((segment, index) => {
     const value = path[index];
     if (value === undefined) return false;
-    if (segment === '*') return true;
-    return typeof segment === 'string' ? value === segment : segment.includes(value);
+    if (segment === "*") return true;
+    return typeof segment === "string" ? value === segment : segment.includes(value);
   });
 }
 
 const SQL_PRESERVED_EMPTY: readonly (readonly PathSegment[])[] = [
-  ['storage', 'namespaces', '*', 'entries', 'table'],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*'],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', ['uniques', 'indexes', 'foreignKeys']],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', 'indexes', 'unique'],
-  ['storage', 'namespaces', '*', 'entries', 'table', '*', 'columns', '*', 'default', 'value'],
+  ["storage", "namespaces", "*", "entries", "table"],
+  ["storage", "namespaces", "*", "entries", "table", "*"],
+  ["storage", "namespaces", "*", "entries", "table", "*", ["uniques", "indexes", "foreignKeys"]],
+  ["storage", "namespaces", "*", "entries", "table", "*", "indexes", "unique"],
+  ["storage", "namespaces", "*", "entries", "table", "*", "columns", "*", "default", "value"],
 ];
 const COLUMN_DEFAULT_VALUE: readonly PathSegment[] = [
-  'storage',
-  'namespaces',
-  '*',
-  'entries',
-  'table',
-  '*',
-  'columns',
-  '*',
-  'default',
-  'value',
+  "storage",
+  "namespaces",
+  "*",
+  "entries",
+  "table",
+  "*",
+  "columns",
+  "*",
+  "default",
+  "value",
 ];
 const FRAMEWORK_PRESERVED_EMPTY: readonly (readonly PathSegment[])[] = [
-  ['domain', 'namespaces'],
-  ['domain', 'namespaces', '*'],
-  ['domain', 'namespaces', '*', 'models'],
-  ['domain', 'namespaces', '*', 'models', '*', 'relations'],
-  ['domain', 'namespaces', '*', 'models', '*', 'storage'],
-  ['storage', 'namespaces'],
-  ['storage', 'namespaces', '*', 'entries'],
-  ['roots'],
-  ['extensions'],
-  ['extensions', '*'],
-  ['capabilities'],
-  ['meta'],
-  ['execution', 'mutations', 'defaults'],
+  ["domain", "namespaces"],
+  ["domain", "namespaces", "*"],
+  ["domain", "namespaces", "*", "models"],
+  ["domain", "namespaces", "*", "models", "*", "relations"],
+  ["domain", "namespaces", "*", "models", "*", "storage"],
+  ["storage", "namespaces"],
+  ["storage", "namespaces", "*", "entries"],
+  ["roots"],
+  ["extensions"],
+  ["extensions", "*"],
+  ["capabilities"],
+  ["meta"],
+  ["execution", "mutations", "defaults"],
 ];
 const TOP_LEVEL_ORDER = [
-  'schemaVersion',
-  'canonicalVersion',
-  'targetFamily',
-  'target',
-  'profileHash',
-  'roots',
-  'domain',
-  'storage',
-  'execution',
-  'capabilities',
-  'extensions',
-  'defaultControlPolicy',
-  'meta',
+  "schemaVersion",
+  "canonicalVersion",
+  "targetFamily",
+  "target",
+  "profileHash",
+  "roots",
+  "domain",
+  "storage",
+  "execution",
+  "capabilities",
+  "extensions",
+  "defaultControlPolicy",
+  "meta",
 ];
 
 function isDefaultValue(value: Json): boolean {
@@ -148,8 +148,8 @@ function isDefaultValue(value: Json): boolean {
 }
 
 function isPreservedEmpty(path: readonly string[], key: string): boolean {
-  if (key === 'nullable') return true;
-  if (key === 'elementNullable' && path.at(-2) === 'many') return true;
+  if (key === "nullable") return true;
+  if (key === "elementNullable" && path.at(-2) === "many") return true;
   if (FRAMEWORK_PRESERVED_EMPTY.some((pattern) => matchesPath(path, pattern))) return true;
   if (
     path.length >= COLUMN_DEFAULT_VALUE.length &&
@@ -165,9 +165,9 @@ function omitDefaults(value: Json, path: readonly string[]): Json {
   const result: JsonRecord = {};
   for (const [key, child] of Object.entries(value)) {
     const childPath = [...path, key];
-    if (key === '_generated') continue;
-    if (key === 'generated' && child === false) continue;
-    if ((key === 'onDelete' || key === 'onUpdate') && child === 'noAction') continue;
+    if (key === "_generated") continue;
+    if (key === "generated" && child === false) continue;
+    if ((key === "onDelete" || key === "onUpdate") && child === "noAction") continue;
     if (isDefaultValue(child) && !isPreservedEmpty(childPath, key)) continue;
     result[key] = omitDefaults(child, childPath);
   }
@@ -175,19 +175,19 @@ function omitDefaults(value: Json, path: readonly string[]): Json {
 }
 
 function compareByName(a: Json, b: Json): number {
-  const nameA = isRecord(a) && typeof a['name'] === 'string' ? a['name'] : '';
-  const nameB = isRecord(b) && typeof b['name'] === 'string' ? b['name'] : '';
+  const nameA = isRecord(a) && typeof a["name"] === "string" ? a["name"] : "";
+  const nameB = isRecord(b) && typeof b["name"] === "string" ? b["name"] : "";
   return compareCodeUnits(nameA, nameB);
 }
 
 function sortTableArrays(storage: Json): Json {
   if (!isRecord(storage)) return storage;
-  const namespaces = storage['namespaces'];
+  const namespaces = storage["namespaces"];
   if (!isRecord(namespaces)) return storage;
   const sortedNamespaces: JsonRecord = {};
   for (const [namespaceId, namespace] of Object.entries(namespaces)) {
-    const entries = isRecord(namespace) ? namespace['entries'] : undefined;
-    const tables = isRecord(entries) ? entries['table'] : undefined;
+    const entries = isRecord(namespace) ? namespace["entries"] : undefined;
+    const tables = isRecord(entries) ? entries["table"] : undefined;
     if (!isRecord(namespace) || !isRecord(entries) || !isRecord(tables)) {
       sortedNamespaces[namespaceId] = namespace;
       continue;
@@ -199,7 +199,7 @@ function sortTableArrays(storage: Json): Json {
         continue;
       }
       const sortedTable: JsonRecord = { ...table };
-      for (const key of ['checks', 'indexes', 'uniques']) {
+      for (const key of ["checks", "indexes", "uniques"]) {
         const list = table[key];
         if (Array.isArray(list)) sortedTable[key] = [...list].sort(compareByName);
       }
@@ -228,7 +228,7 @@ function orderTopLevel(value: JsonRecord): JsonRecord {
 }
 
 function omitNamespaceKinds(storage: JsonRecord): JsonRecord {
-  const namespaces = storage['namespaces'];
+  const namespaces = storage["namespaces"];
   if (!isRecord(namespaces)) return storage;
   const stripped: JsonRecord = {};
   for (const [namespaceId, namespace] of Object.entries(namespaces)) {
@@ -243,13 +243,13 @@ function omitNamespaceKinds(storage: JsonRecord): JsonRecord {
 }
 
 function computeStorageHash(contract: JsonRecord): string {
-  const storage = isRecord(contract['storage']) ? contract['storage'] : {};
+  const storage = isRecord(contract["storage"]) ? contract["storage"] : {};
   const { storageHash: _published, ...withoutHash } = storage;
   const hashed: JsonRecord = {
-    schemaVersion: '1',
-    targetFamily: typeof contract['targetFamily'] === 'string' ? contract['targetFamily'] : '',
-    target: typeof contract['target'] === 'string' ? contract['target'] : '',
-    profileHash: '',
+    schemaVersion: "1",
+    targetFamily: typeof contract["targetFamily"] === "string" ? contract["targetFamily"] : "",
+    target: typeof contract["target"] === "string" ? contract["target"] : "",
+    profileHash: "",
     roots: {},
     domain: { namespaces: {} },
     storage: omitNamespaceKinds(withoutHash),
@@ -258,13 +258,13 @@ function computeStorageHash(contract: JsonRecord): string {
     meta: {},
   };
   const withoutDefaults = omitDefaults(hashed, []);
-  if (!isRecord(withoutDefaults)) return '';
+  if (!isRecord(withoutDefaults)) return "";
   const withSortedStorage = {
     ...withoutDefaults,
-    storage: sortTableArrays(withoutDefaults['storage'] ?? {}),
+    storage: sortTableArrays(withoutDefaults["storage"] ?? {}),
   };
   const sorted = sortKeys(withSortedStorage);
-  return isRecord(sorted) ? sha256(JSON.stringify(orderTopLevel(sorted), null, 2)) : '';
+  return isRecord(sorted) ? sha256(JSON.stringify(orderTopLevel(sorted), null, 2)) : "";
 }
 
 function computeMigrationHash(metadata: JsonRecord, ops: Json): string {
@@ -321,7 +321,7 @@ function listFiles(root: string): ProjectFiles {
       compareCodeUnits(a.name, b.name),
     );
     const inMigrationPackage = entries.some(
-      (entry) => entry.name === 'migration.json' && isFileEntry(dir, entry),
+      (entry) => entry.name === "migration.json" && isFileEntry(dir, entry),
     );
     for (const entry of entries) {
       const path = join(dir, entry.name);
@@ -330,7 +330,7 @@ function listFiles(root: string): ProjectFiles {
         continue;
       }
       if (entry.isDirectory() || (entry.isSymbolicLink() && isDirectory(path))) {
-        if (!SKIPPED_DIRECTORIES.has(entry.name) && !entry.name.startsWith('.')) visit(path);
+        if (!SKIPPED_DIRECTORIES.has(entry.name) && !entry.name.startsWith(".")) visit(path);
         continue;
       }
       if (!isFileEntry(dir, entry)) continue;
@@ -346,10 +346,10 @@ function listFiles(root: string): ProjectFiles {
   const named = (test: (file: FoundFile, name: string) => boolean): string[] =>
     files.filter((file) => test(file, basename(file.path))).map((file) => file.path);
   return {
-    json: named((_file, name) => name.endsWith('.json')),
-    migrationJson: named((_file, name) => name === 'migration.json'),
-    refs: named((file, name) => name.endsWith('.json') && basename(dirname(file.path)) === 'refs'),
-    migrationTs: named((file, name) => name === 'migration.ts' && file.inMigrationPackage),
+    json: named((_file, name) => name.endsWith(".json")),
+    migrationJson: named((_file, name) => name === "migration.json"),
+    refs: named((file, name) => name.endsWith(".json") && basename(dirname(file.path)) === "refs"),
+    migrationTs: named((file, name) => name === "migration.ts" && file.inMigrationPackage),
     leftovers,
   };
 }
@@ -357,9 +357,9 @@ function listFiles(root: string): ProjectFiles {
 function isSnapshotContract(path: string): boolean {
   const snapshotDir = dirname(path);
   return (
-    basename(path) === 'contract.json' &&
+    basename(path) === "contract.json" &&
     HASH.test(basename(snapshotDir)) &&
-    basename(dirname(snapshotDir)) === 'snapshots'
+    basename(dirname(snapshotDir)) === "snapshots"
   );
 }
 
@@ -375,7 +375,7 @@ function readDirectory(dir: string): Map<string, string> {
   if (!existsSync(dir)) return files;
   for (const entry of readdirSync(dir, { withFileTypes: true }))
     if (isFileEntry(dir, entry) && !entry.name.endsWith(TEMPORARY_SUFFIX))
-      files.set(entry.name, readFileSync(join(dir, entry.name), 'utf8'));
+      files.set(entry.name, readFileSync(join(dir, entry.name), "utf8"));
   return files;
 }
 
@@ -417,7 +417,7 @@ function count(amount: number, singular: string, plural: string): string {
   return `${amount} ${amount === 1 ? singular : plural}`;
 }
 
-const REMOVED_KEY = 'typeRef';
+const REMOVED_KEY = "typeRef";
 const DTS_LINE_WIDTH = 100;
 
 interface Rewrite {
@@ -433,7 +433,7 @@ interface Rewrite {
 }
 
 function nonEmptyParams(entry: JsonRecord): JsonRecord | undefined {
-  const params = entry['typeParams'];
+  const params = entry["typeParams"];
   return isRecord(params) && Object.keys(params).length > 0 ? params : undefined;
 }
 
@@ -443,19 +443,19 @@ function expandedColumn(column: JsonRecord, entry: JsonRecord): JsonRecord {
   const result: JsonRecord = {};
   for (const [key, value] of Object.entries(column)) {
     if (key !== REMOVED_KEY) result[key] = value;
-    else if (params !== undefined) result['typeParams'] = params;
+    else if (params !== undefined) result["typeParams"] = params;
   }
   return result;
 }
 
 function describeType(record: JsonRecord): string {
-  return `codec ${String(record['codecId'])} and data type ${String(record['dataType'])}`;
+  return `codec ${String(record["codecId"])} and data type ${String(record["dataType"])}`;
 }
 
 /** The contract with every column's type alias written into the column, the aliases it named removed from `storage.types`, and in a contract of the app's space every other entry too. */
 function rewriteContract(contract: JsonRecord, space: SpaceKind): Rewrite {
   const copy = parseJson(JSON.stringify(contract));
-  const storage = isRecord(copy) ? copy['storage'] : undefined;
+  const storage = isRecord(copy) ? copy["storage"] : undefined;
   if (!isRecord(copy) || !isRecord(storage))
     return {
       contract,
@@ -465,34 +465,34 @@ function rewriteContract(contract: JsonRecord, space: SpaceKind): Rewrite {
       kept: [],
       problems: [],
     };
-  const types = isRecord(storage['types']) ? storage['types'] : {};
+  const types = isRecord(storage["types"]) ? storage["types"] : {};
   const expanded = new Map<string, JsonRecord>();
   const problems: string[] = [];
   let changed = false;
-  const namespaces = storage['namespaces'];
+  const namespaces = storage["namespaces"];
   for (const namespace of isRecord(namespaces) ? Object.values(namespaces) : []) {
-    const entries = isRecord(namespace) ? namespace['entries'] : undefined;
-    const tables = isRecord(entries) ? entries['table'] : undefined;
+    const entries = isRecord(namespace) ? namespace["entries"] : undefined;
+    const tables = isRecord(entries) ? entries["table"] : undefined;
     for (const [tableName, table] of isRecord(tables) ? Object.entries(tables) : []) {
-      const columns = isRecord(table) ? table['columns'] : undefined;
+      const columns = isRecord(table) ? table["columns"] : undefined;
       if (!isRecord(columns)) continue;
       for (const [columnName, column] of Object.entries(columns)) {
         if (!isRecord(column) || !Object.hasOwn(column, REMOVED_KEY)) continue;
         changed = true;
         const alias = column[REMOVED_KEY];
-        const entry = typeof alias === 'string' ? types[alias] : undefined;
+        const entry = typeof alias === "string" ? types[alias] : undefined;
         const where = `column ${tableName}.${columnName}`;
-        if (typeof alias !== 'string' || !isRecord(entry)) {
+        if (typeof alias !== "string" || !isRecord(entry)) {
           problems.push(
             `${where} is typed by the type alias ${JSON.stringify(alias)}, which storage.types does not declare`,
           );
           continue;
         }
-        if (Object.hasOwn(column, 'typeParams')) {
+        if (Object.hasOwn(column, "typeParams")) {
           problems.push(`${where} stores both typeRef and typeParams`);
           continue;
         }
-        if (column['codecId'] !== entry['codecId'] || column['dataType'] !== entry['dataType']) {
+        if (column["codecId"] !== entry["codecId"] || column["dataType"] !== entry["dataType"]) {
           problems.push(
             `${where} has ${describeType(column)}, but its type alias ${alias} has ${describeType(entry)}`,
           );
@@ -503,9 +503,9 @@ function rewriteContract(contract: JsonRecord, space: SpaceKind): Rewrite {
       }
     }
   }
-  const removed = new Set(space === 'app' ? Object.keys(types) : expanded.keys());
+  const removed = new Set(space === "app" ? Object.keys(types) : expanded.keys());
   for (const alias of removed) delete types[alias];
-  if (removed.size > 0 && Object.keys(types).length === 0) delete storage['types'];
+  if (removed.size > 0 && Object.keys(types).length === 0) delete storage["types"];
   const kept = Object.keys(types).sort(compareCodeUnits);
   return {
     contract: copy,
@@ -518,24 +518,24 @@ function rewriteContract(contract: JsonRecord, space: SpaceKind): Rewrite {
 }
 
 function withStorageHash(contract: JsonRecord, hash: string): JsonRecord {
-  const storage = contract['storage'];
-  if (!isRecord(storage) || typeof storage['storageHash'] !== 'string') return contract;
+  const storage = contract["storage"];
+  if (!isRecord(storage) || typeof storage["storageHash"] !== "string") return contract;
   return { ...contract, storage: { ...storage, storageHash: hash } };
 }
 
 function lineEndingOf(text: string): string {
-  return text.includes('\r\n') ? '\r\n' : '\n';
+  return text.includes("\r\n") ? "\r\n" : "\n";
 }
 
 /** The contract written the way the file held it: a snapshot's canonical line, or indented JSON, with the file's byte order mark and line ending. */
 function writtenForm(contract: JsonRecord, original: JsonRecord, text: string): string {
-  const mark = text.startsWith(BYTE_ORDER_MARK) ? BYTE_ORDER_MARK : '';
+  const mark = text.startsWith(BYTE_ORDER_MARK) ? BYTE_ORDER_MARK : "";
   const body = withoutByteOrderMark(text);
   const lineEnding = lineEndingOf(body);
-  const finalNewline = body.endsWith('\n') ? lineEnding : '';
+  const finalNewline = body.endsWith("\n") ? lineEnding : "";
   if (body === `${canonicalizeJson(original)}${finalNewline}`)
     return `${mark}${canonicalizeJson(contract)}${finalNewline}`;
-  const indented = JSON.stringify(contract, null, 2).replaceAll('\n', lineEnding);
+  const indented = JSON.stringify(contract, null, 2).replaceAll("\n", lineEnding);
   return `${mark}${indented}${finalNewline}`;
 }
 
@@ -553,25 +553,25 @@ function scanBlocks(text: string): Block[] {
   for (let index = 0; index < text.length; index++) {
     const char = text[index];
     if (quote !== undefined) {
-      if (char === '\\') index++;
+      if (char === "\\") index++;
       else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === '/' && text[index + 1] === '/') {
-      const end = text.indexOf('\n', index);
+    if (char === "/" && text[index + 1] === "/") {
+      const end = text.indexOf("\n", index);
       index = end === -1 ? text.length : end;
       continue;
     }
-    if (char === '/' && text[index + 1] === '*') {
-      const end = text.indexOf('*/', index + 2);
+    if (char === "/" && text[index + 1] === "*") {
+      const end = text.indexOf("*/", index + 2);
       index = end === -1 ? text.length : end + 1;
       continue;
     }
-    if (char === "'" || char === '"' || char === '`') {
+    if (char === "'" || char === '"' || char === "`") {
       quote = char;
       continue;
     }
-    if (char === '{') {
+    if (char === "{") {
       const key =
         /(?:readonly\s+)?([\p{ID_Start}_$][\p{ID_Continue}$]*|'[^']*'|"[^"]*")\s*\??\s*:\s*$/u.exec(
           text.slice(Math.max(0, index - 200), index),
@@ -579,12 +579,12 @@ function scanBlocks(text: string): Block[] {
       const block: Block = {
         start: index,
         end: text.length,
-        label: key?.[1]?.replace(/^['"]|['"]$/g, '') ?? '',
+        label: key?.[1]?.replace(/^['"]|['"]$/g, "") ?? "",
         parent: open.at(-1),
       };
       open.push(block);
       blocks.push(block);
-    } else if (char === '}') {
+    } else if (char === "}") {
       const block = open.pop();
       if (block !== undefined) block.end = index;
     }
@@ -608,9 +608,9 @@ function innermostBlock(blocks: readonly Block[], position: number): Block | und
 function isColumnBlock(block: Block): boolean {
   const table = block.parent?.parent;
   return (
-    block.parent?.label === 'columns' &&
-    table?.parent?.label === 'table' &&
-    table.parent.parent?.label === 'entries'
+    block.parent?.label === "columns" &&
+    table?.parent?.label === "table" &&
+    table.parent.parent?.label === "entries"
   );
 }
 
@@ -622,14 +622,14 @@ function childBlocks(blocks: readonly Block[], parent: Block): Block[] {
 function storageTypesBlock(blocks: readonly Block[]): Block | undefined {
   return blocks.find(
     (block) =>
-      block.label === 'types' &&
+      block.label === "types" &&
       block.parent !== undefined &&
-      childBlocks(blocks, block.parent).some((sibling) => sibling.label === 'namespaces'),
+      childBlocks(blocks, block.parent).some((sibling) => sibling.label === "namespaces"),
   );
 }
 
 function lineStart(text: string, position: number): number {
-  return text.lastIndexOf('\n', position - 1) + 1;
+  return text.lastIndexOf("\n", position - 1) + 1;
 }
 
 /** The end of the member a block closes: past its `;` and the line break after it. */
@@ -639,7 +639,7 @@ function memberEnd(text: string, block: Block): number {
 }
 
 function indentOf(text: string, position: number): string {
-  return /^[ \t]*/.exec(text.slice(lineStart(text, position)))?.[0] ?? '';
+  return /^[ \t]*/.exec(text.slice(lineStart(text, position)))?.[0] ?? "";
 }
 
 /** Splits `{ a; b }` into its top-level members. */
@@ -648,37 +648,37 @@ function topLevelMembers(literal: string): string[] {
   const members: string[] = [];
   let depth = 0;
   let quote: string | undefined;
-  let current = '';
+  let current = "";
   for (let index = 0; index < inner.length; index++) {
-    const char = inner[index] ?? '';
+    const char = inner[index] ?? "";
     current += char;
     if (quote !== undefined) {
-      if (char === '\\') current += inner[++index] ?? '';
+      if (char === "\\") current += inner[++index] ?? "";
       else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === "'" || char === '"' || char === '`') quote = char;
-    else if (char === '{' || char === '[' || char === '(') depth++;
-    else if (char === '}' || char === ']' || char === ')') depth--;
-    else if (char === ';' && depth === 0) {
+    if (char === "'" || char === '"' || char === "`") quote = char;
+    else if (char === "{" || char === "[" || char === "(") depth++;
+    else if (char === "}" || char === "]" || char === ")") depth--;
+    else if (char === ";" && depth === 0) {
       members.push(current.slice(0, -1).trim());
-      current = '';
+      current = "";
     }
   }
-  if (current.trim() !== '') members.push(current.trim());
+  if (current.trim() !== "") members.push(current.trim());
   return members;
 }
 
 /** The `readonly typeParams` member, laid out as the emitter's formatter lays it out at `indent`. */
 function typeParamsMember(literal: string, indent: string, lineEnding: string): string {
-  const lines = literal.split('\n');
+  const lines = literal.split("\n");
   const head = `${indent}readonly typeParams: `;
   if (lines.length > 1) {
-    const literalIndent = /^[ \t]*/.exec(lines.at(-1) ?? '')?.[0] ?? '';
+    const literalIndent = /^[ \t]*/.exec(lines.at(-1) ?? "")?.[0] ?? "";
     const shifted = lines.map((line, index) =>
       index === 0 ? line : `${indent}${line.slice(literalIndent.length)}`,
     );
-    return `${head}${shifted.join('\n')};`;
+    return `${head}${shifted.join("\n")};`;
   }
   const single = `${head}${literal};`;
   if (single.length <= DTS_LINE_WIDTH) return single;
@@ -692,7 +692,7 @@ function entryParamsLiteral(
   blocks: readonly Block[],
   entry: Block,
 ): string | undefined {
-  const params = childBlocks(blocks, entry).find((block) => block.label === 'typeParams');
+  const params = childBlocks(blocks, entry).find((block) => block.label === "typeParams");
   return params === undefined ? undefined : text.slice(params.start, params.end + 1);
 }
 
@@ -701,7 +701,7 @@ function jsonParamsLiteral(params: JsonRecord): string {
     ([key, value]) =>
       `readonly ${/^[A-Za-z_$][\w$]*$/.test(key) ? key : `'${key}'`}: ${JSON.stringify(value)}`,
   );
-  return `{ ${members.join('; ')} }`;
+  return `{ ${members.join("; ")} }`;
 }
 
 interface Edit {
@@ -733,15 +733,15 @@ function rewriteDts(
   }
   const edits: Edit[] = [];
   for (const match of text.matchAll(/readonly typeRef:\s*(?:'([^']*)'|"([^"]*)")\s*;?/g)) {
-    const alias = match[1] ?? match[2] ?? '';
+    const alias = match[1] ?? match[2] ?? "";
     const column = innermostBlock(blocks, match.index);
     if (column === undefined || !isColumnBlock(column) || !expanded.has(alias)) continue;
     const start = lineStart(text, match.index);
     const literal = literals.get(alias);
     if (literal === undefined) {
       const end = match.index + match[0].length;
-      const lineBreak = /^\r?\n/.exec(text.slice(end))?.[0] ?? '';
-      edits.push({ start, end: end + lineBreak.length, text: '' });
+      const lineBreak = /^\r?\n/.exec(text.slice(end))?.[0] ?? "";
+      edits.push({ start, end: end + lineBreak.length, text: "" });
     } else {
       edits.push({
         start,
@@ -756,11 +756,11 @@ function rewriteDts(
       edits.push({
         start: lineStart(text, typesBlock.start),
         end: memberEnd(text, typesBlock),
-        text: '',
+        text: "",
       });
     } else {
       for (const block of removed)
-        edits.push({ start: lineStart(text, block.start), end: memberEnd(text, block), text: '' });
+        edits.push({ start: lineStart(text, block.start), end: memberEnd(text, block), text: "" });
     }
   }
   let result = text;
@@ -788,7 +788,7 @@ interface ContractPlan {
 }
 
 /** Whose contract space a contract is: the app's own; an extension's, which registers database types; or unknown, for a snapshot no migration or ref names. Only a contract of the app's space loses the entries no column references. */
-type SpaceKind = 'app' | 'extension' | 'unknown';
+type SpaceKind = "app" | "extension" | "unknown";
 
 /** A hash a migration or ref names, and the space whose directory holds it. */
 interface HashReference {
@@ -801,28 +801,28 @@ interface HashReference {
 
 /** The space of the directory that holds a migration package or a `refs` directory: `migrations/app` is the app's; any other space directory, or a package's own single-space `migrations`, an extension's. */
 function spaceOfDirectory(spaceDir: string): SpaceKind {
-  return basename(spaceDir) === APP_SPACE_ID ? 'app' : 'extension';
+  return basename(spaceDir) === APP_SPACE_ID ? "app" : "extension";
 }
 
 function hashReferences(files: ProjectFiles): HashReference[] {
   const references: HashReference[] = [];
   for (const path of files.migrationJson) {
-    const metadata = parseJson(readFileSync(path, 'utf8'));
+    const metadata = parseJson(readFileSync(path, "utf8"));
     if (!isRecord(metadata)) continue;
-    const from = metadata['from'];
-    const to = metadata['to'];
-    const hashes = [from, to].filter((hash): hash is string => typeof hash === 'string');
+    const from = metadata["from"];
+    const to = metadata["to"];
+    const hashes = [from, to].filter((hash): hash is string => typeof hash === "string");
     references.push({
       path: dirname(path),
       space: spaceOfDirectory(dirname(dirname(path))),
       hashes,
-      edge: typeof from === 'string' && typeof to === 'string' ? { from, to } : undefined,
+      edge: typeof from === "string" && typeof to === "string" ? { from, to } : undefined,
     });
   }
   for (const path of files.refs) {
-    const ref = parseJson(readFileSync(path, 'utf8'));
-    const hash = isRecord(ref) ? ref['hash'] : undefined;
-    if (typeof hash !== 'string') continue;
+    const ref = parseJson(readFileSync(path, "utf8"));
+    const hash = isRecord(ref) ? ref["hash"] : undefined;
+    if (typeof hash !== "string") continue;
     references.push({
       path,
       space: spaceOfDirectory(dirname(dirname(path))),
@@ -835,17 +835,17 @@ function hashReferences(files: ProjectFiles): HashReference[] {
 
 /** The space of a migrations directory, by its layout: an `app` space directory, or no `refs` directly in it, is the app's. */
 function spaceOfMigrationsDirectory(dir: string): SpaceKind {
-  if (isDirectory(join(dir, APP_SPACE_ID))) return 'app';
-  return isDirectory(join(dir, 'refs')) ? 'extension' : 'app';
+  if (isDirectory(join(dir, APP_SPACE_ID))) return "app";
+  return isDirectory(join(dir, "refs")) ? "extension" : "app";
 }
 
 /** The space of a contract that no ref or migration names: unknown for a snapshot, as every space shares the snapshot store; for an emitted contract, that of the nearest `migrations` directory above it, or the app's when there is none. */
 function spaceByLayout(path: string, snapshot: boolean, root: string): SpaceKind {
-  if (snapshot) return 'unknown';
+  if (snapshot) return "unknown";
   for (let dir = dirname(path); ; dir = dirname(dir)) {
-    const migrations = join(dir, 'migrations');
+    const migrations = join(dir, "migrations");
     if (isDirectory(migrations)) return spaceOfMigrationsDirectory(migrations);
-    if (dir === root || dirname(dir) === dir) return 'app';
+    if (dir === root || dirname(dir) === dir) return "app";
   }
 }
 
@@ -860,11 +860,11 @@ function summary(
 ): readonly string[] {
   if (contractsFound === 0) return [`No SQL contract was found under ${root}; nothing changed.`];
   if (files === 0 && directories === 0)
-    return ['No contract stores a type alias; nothing changed.'];
-  const renamed = count(directories, 'snapshot directory', 'snapshot directories');
-  const changes = `Rewrote ${count(files, 'file', 'files')} and renamed ${renamed}.`;
+    return ["No contract stores a type alias; nothing changed."];
+  const renamed = count(directories, "snapshot directory", "snapshot directories");
+  const changes = `Rewrote ${count(files, "file", "files")} and renamed ${renamed}.`;
   const listed = (entries: readonly (readonly [string, readonly string[]])[]) =>
-    entries.map(([path, names]) => `  ${path}: ${names.join(', ')}`);
+    entries.map(([path, names]) => `  ${path}: ${names.join(", ")}`);
   return [
     ...(hashes.size === 0
       ? [changes]
@@ -874,7 +874,7 @@ function summary(
             .sort(([a], [b]) => compareCodeUnits(a, b))
             .map(([oldHash, newHash]) => `  ${oldHash} -> ${newHash}`),
         ]),
-    ...(removed.length === 0 ? [] : ['Removed storage.types entries:', ...listed(removed)]),
+    ...(removed.length === 0 ? [] : ["Removed storage.types entries:", ...listed(removed)]),
     ...(kept.length === 0
       ? []
       : [
@@ -907,15 +907,15 @@ interface MigrationOps {
 }
 
 function readOps(migrationDir: string): MigrationOps {
-  const path = join(migrationDir, 'ops.json');
+  const path = join(migrationDir, "ops.json");
   if (!existsSync(path)) return { path, ops: undefined, unreadable: false };
-  const ops = parseJson(readFileSync(path, 'utf8'));
+  const ops = parseJson(readFileSync(path, "utf8"));
   return { path, ops, unreadable: ops === undefined };
 }
 
 /** Whether the operations hold one of class `data`, the one kind that lets a migration go from a snapshot to itself. The migration checker's rule (`checkIntegrity` in `@internal/migration-tools`). */
 function hasDataOperation(ops: Json | undefined): boolean {
-  return Array.isArray(ops) && ops.some((op) => isRecord(op) && op['operationClass'] === 'data');
+  return Array.isArray(ops) && ops.some((op) => isRecord(op) && op["operationClass"] === "data");
 }
 
 /**
@@ -946,7 +946,7 @@ function mergedSnapshots(
     for (const [newHash, oldHashes] of merged) {
       if (oldHashes.size < 2) continue;
       directories.add(join(store, newHash));
-      const names = [...oldHashes].sort(compareCodeUnits).join(' and ');
+      const names = [...oldHashes].sort(compareCodeUnits).join(" and ");
       for (const { path, edge } of references) {
         if (
           edge === undefined ||
@@ -969,7 +969,7 @@ function mergedSnapshots(
         const toDelete =
           snapshots.length === 0
             ? `the migration directory ${display(path)}`
-            : `the migration directory ${display(path)} and the snapshot ${snapshots.length === 1 ? 'directory' : 'directories'} ${snapshots.join(' and ')}, which no other migration or ref names,`;
+            : `the migration directory ${display(path)} and the snapshot ${snapshots.length === 1 ? "directory" : "directories"} ${snapshots.join(" and ")}, which no other migration or ref names,`;
         lines.push(
           `${display(store)}: the snapshots ${names} become the same snapshot, ${newHash}, once their type aliases are written into their columns. Migration ${display(path)} goes from ${edge.from} to ${edge.to} and has no data operation, so it would go from ${newHash} to itself, which only a migration with a data operation may do. Delete ${toDelete} and run the script again.`,
         );
@@ -979,15 +979,15 @@ function mergedSnapshots(
   return { lines, directories };
 }
 
-const JSON_FILES_THAT_MUST_PARSE = new Set(['contract.json', 'migration.json']);
+const JSON_FILES_THAT_MUST_PARSE = new Set(["contract.json", "migration.json"]);
 
 function parseRoot(args: readonly string[]): { readonly root: string; readonly errors: string[] } {
-  const errors = args.filter((arg) => arg.startsWith('-')).map((arg) => `${arg}: unknown option`);
-  const positional = args.filter((arg) => !arg.startsWith('-'));
+  const errors = args.filter((arg) => arg.startsWith("-")).map((arg) => `${arg}: unknown option`);
+  const positional = args.filter((arg) => !arg.startsWith("-"));
   if (positional.length > 1) errors.push(`expected one project root, got ${positional.length}`);
   const root = resolve(positional[0] ?? process.cwd());
   if (errors.length === 0 && !isDirectory(root)) errors.push(`${root}: not a directory`);
-  if (errors.length > 0) errors.push('Usage: node expand-type-aliases.ts [project-root]');
+  if (errors.length > 0) errors.push("Usage: node expand-type-aliases.ts [project-root]");
   return { root, errors };
 }
 
@@ -999,10 +999,10 @@ function main({
   readonly errors: readonly string[];
 }): number {
   if (errors.length > 0) {
-    process.stderr.write(`${errors.join('\n')}\n`);
+    process.stderr.write(`${errors.join("\n")}\n`);
     return 1;
   }
-  const display = (path: string): string => relative(root, path).split(sep).join('/');
+  const display = (path: string): string => relative(root, path).split(sep).join("/");
   const files = listFiles(root);
   const references = hashReferences(files);
   const spacesByHash = new Map<string, Set<SpaceKind>>();
@@ -1011,8 +1011,8 @@ function main({
       spacesByHash.set(hash, new Set([...(spacesByHash.get(hash) ?? []), reference.space]));
   const spaceOf = (path: string, snapshot: boolean, hash: string): SpaceKind => {
     const spaces = spacesByHash.get(hash);
-    if (spaces?.has('extension')) return 'extension';
-    if (spaces?.has('app')) return 'app';
+    if (spaces?.has("extension")) return "extension";
+    if (spaces?.has("app")) return "app";
     return spaceByLayout(path, snapshot, root);
   };
   const plans: ContractPlan[] = [];
@@ -1020,7 +1020,7 @@ function main({
   let contractsFound = 0;
 
   for (const path of files.json) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const contract = parseJson(text);
     if (
       contract === undefined &&
@@ -1031,19 +1031,19 @@ function main({
     }
     if (
       !isRecord(contract) ||
-      contract['targetFamily'] !== 'sql' ||
-      typeof contract['target'] !== 'string' ||
-      !isRecord(contract['storage'])
+      contract["targetFamily"] !== "sql" ||
+      typeof contract["target"] !== "string" ||
+      !isRecord(contract["storage"])
     )
       continue;
     contractsFound++;
     const snapshot = isSnapshotContract(path);
-    const stored = contract['storage']['storageHash'];
-    const oldHash = snapshot ? basename(dirname(path)) : typeof stored === 'string' ? stored : '';
+    const stored = contract["storage"]["storageHash"];
+    const oldHash = snapshot ? basename(dirname(path)) : typeof stored === "string" ? stored : "";
     const rewrite = rewriteContract(contract, spaceOf(path, snapshot, oldHash));
     if (!rewrite.changed) continue;
     const computed = computeStorageHash(contract);
-    if (computed !== oldHash || (typeof stored === 'string' && stored !== oldHash)) {
+    if (computed !== oldHash || (typeof stored === "string" && stored !== oldHash)) {
       stops.push(
         `${display(path)}: the stored storage hash ${oldHash} does not match the contract's content, which hashes to ${computed}; restore the file from version control, or re-emit it, and run the script again`,
       );
@@ -1087,14 +1087,14 @@ function main({
   const removedEntries: [string, readonly string[]][] = [];
   for (const plan of plans) {
     const dtsPath = plan.snapshot
-      ? join(dirname(plan.path), 'contract.d.ts')
-      : `${plan.path.slice(0, -'.json'.length)}.d.ts`;
+      ? join(dirname(plan.path), "contract.d.ts")
+      : `${plan.path.slice(0, -".json".length)}.d.ts`;
     const dtsHashes = new Map([...hashes, [plan.oldHash, plan.newHash]]);
     const dts = existsSync(dtsPath)
-      ? rewriteDts(readFileSync(dtsPath, 'utf8'), plan.expanded, plan.removed, dtsHashes)
+      ? rewriteDts(readFileSync(dtsPath, "utf8"), plan.expanded, plan.removed, dtsHashes)
       : undefined;
     const writtenPath = plan.snapshot
-      ? join(dirname(dirname(plan.path)), plan.newHash, 'contract.json')
+      ? join(dirname(dirname(plan.path)), plan.newHash, "contract.json")
       : plan.path;
     if (plan.kept.length > 0) kept.push([display(writtenPath), plan.kept]);
     if (plan.removed.size > 0) removedEntries.push([display(writtenPath), [...plan.removed]]);
@@ -1113,8 +1113,8 @@ function main({
     }
     removals.add(oldDir);
     const content = readDirectory(oldDir);
-    content.set('contract.json', plan.content);
-    if (dts !== undefined) content.set('contract.d.ts', dts);
+    content.set("contract.json", plan.content);
+    if (dts !== undefined) content.set("contract.d.ts", dts);
     const planned = newDirectories.get(newDir);
     if (planned !== undefined && !sameFiles(planned, content)) {
       if (!merged.directories.has(newDir))
@@ -1132,24 +1132,24 @@ function main({
   }
 
   for (const path of files.migrationJson) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const metadata = parseJson(text);
     if (!isRecord(metadata)) continue;
-    const from = metadata['from'];
-    const to = metadata['to'];
-    const nextFrom = typeof from === 'string' ? (hashes.get(from) ?? from) : from;
-    const nextTo = typeof to === 'string' ? (hashes.get(to) ?? to) : to;
+    const from = metadata["from"];
+    const to = metadata["to"];
+    const nextFrom = typeof from === "string" ? (hashes.get(from) ?? from) : from;
+    const nextTo = typeof to === "string" ? (hashes.get(to) ?? to) : to;
     if (nextFrom === from && nextTo === to) continue;
     const { path: opsPath, ops, unreadable } = readOps(dirname(path));
     if (unreadable) {
       stops.push(`${display(opsPath)}: not valid JSON`);
       continue;
     }
-    const oldMigrationHash = metadata['migrationHash'];
+    const oldMigrationHash = metadata["migrationHash"];
     let next = replaceQuotedHashes(text, hashes);
     if (
       ops !== undefined &&
-      typeof oldMigrationHash === 'string' &&
+      typeof oldMigrationHash === "string" &&
       nextFrom !== undefined &&
       nextTo !== undefined
     ) {
@@ -1159,18 +1159,18 @@ function main({
     referenceWrites.set(path, next);
   }
   for (const path of files.refs) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const next = replaceQuotedHashes(text, hashes);
     if (next !== text) referenceWrites.set(path, next);
   }
   for (const path of files.migrationTs) {
-    const text = readFileSync(path, 'utf8');
+    const text = readFileSync(path, "utf8");
     const next = replaceHashTokens(text, hashes);
     if (next !== text) referenceWrites.set(path, next);
   }
 
   if (stops.length > 0) {
-    process.stderr.write(`${[...new Set(stops)].join('\n')}\n`);
+    process.stderr.write(`${[...new Set(stops)].join("\n")}\n`);
     return 1;
   }
 
@@ -1199,7 +1199,7 @@ function main({
     byPath(removedEntries),
     byPath(kept),
   );
-  process.stdout.write(`${lines.join('\n')}\n`);
+  process.stdout.write(`${lines.join("\n")}\n`);
   return 0;
 }
 

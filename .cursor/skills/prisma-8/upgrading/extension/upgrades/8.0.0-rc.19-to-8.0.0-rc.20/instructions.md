@@ -179,11 +179,11 @@ If the re-emitted `storage.storageHash` differs from the hash in `migrations/ref
 
 ```ts
 #!/usr/bin/env -S node
-import { Migration, MigrationCLI } from '@internal/postgres/migration';
+import { Migration, MigrationCLI } from "@internal/postgres/migration";
 
 export default class M extends Migration {
   override describe() {
-    return { from: '<the hash in migrations/refs/head.json>', to: '<the re-emitted storageHash>' };
+    return { from: "<the hash in migrations/refs/head.json>", to: "<the re-emitted storageHash>" };
   }
 
   override get operations() {
@@ -199,14 +199,18 @@ Run `node migration.ts` in that directory to write its `ops.json` and `migration
 Then add the new migration to the migrations your descriptor ships, after the existing ones. An application gets the extension's migrations only from that list. Without it, an application's database that is empty or at the head ref's old hash cannot reach the new head. In pgvector, PostGIS and ParadeDB the list is the `migrations` argument of `contractSpaceFromJson`:
 
 ```ts
-import removeUnusedAliasMetadata from '../../migrations/<the new directory>/migration.json' with { type: 'json' };
-import removeUnusedAliasOps from '../../migrations/<the new directory>/ops.json' with { type: 'json' };
+import removeUnusedAliasMetadata from "../../migrations/<the new directory>/migration.json" with { type: "json" };
+import removeUnusedAliasOps from "../../migrations/<the new directory>/ops.json" with { type: "json" };
 
 const contractSpace = contractSpaceFromJson<Contract<SqlStorage>>({
   contractJson,
   migrations: [
     { dirName: BASELINE_DIR_NAME, metadata: baselineMetadata, ops: baselineOps },
-    { dirName: '<the new directory>', metadata: removeUnusedAliasMetadata, ops: removeUnusedAliasOps },
+    {
+      dirName: "<the new directory>",
+      metadata: removeUnusedAliasMetadata,
+      ops: removeUnusedAliasOps,
+    },
   ],
   headRef,
 });
@@ -222,7 +226,7 @@ A contract space that registers a database type, because PSL has no syntax for a
 // Before
 export const contract = defineContract({ codecLookup, dataTypeLookup }, () => ({
   types: {
-    [PGVECTOR_NATIVE_TYPE]: { kind: 'codec-instance', codecId: VECTOR_CODEC_ID, typeParams: {} },
+    [PGVECTOR_NATIVE_TYPE]: { kind: "codec-instance", codecId: VECTOR_CODEC_ID, typeParams: {} },
   },
   models: {},
 }));
@@ -230,7 +234,7 @@ export const contract = defineContract({ codecLookup, dataTypeLookup }, () => ({
 // After
 export const contract = defineContract({ codecLookup, dataTypeLookup }, () => ({
   databaseTypes: {
-    [PGVECTOR_NATIVE_TYPE]: { kind: 'codec-instance', codecId: VECTOR_CODEC_ID, typeParams: {} },
+    [PGVECTOR_NATIVE_TYPE]: { kind: "codec-instance", codecId: VECTOR_CODEC_ID, typeParams: {} },
   },
   models: {},
 }));
@@ -284,11 +288,25 @@ A migration planner lists each operation that changes who can read or write data
 
 ```ts
 // Before
-return { kind: 'success', plan, appliedStatements, dataLoss: [], accessWidening: [], temporaryValues: [] };
+return {
+  kind: "success",
+  plan,
+  appliedStatements,
+  dataLoss: [],
+  accessWidening: [],
+  temporaryValues: [],
+};
 plannerSuccess(plan, appliedStatements, { dataLoss: [], accessWidening: [], temporaryValues: [] });
 
 // After
-return { kind: 'success', plan, appliedStatements, dataLoss: [], accessChanges: [], temporaryValues: [] };
+return {
+  kind: "success",
+  plan,
+  appliedStatements,
+  dataLoss: [],
+  accessChanges: [],
+  temporaryValues: [],
+};
 plannerSuccess(plan, appliedStatements, { dataLoss: [], accessChanges: [], temporaryValues: [] });
 ```
 
@@ -337,10 +355,10 @@ rawSql({
     {
       description: 'verify extension "vector" is not already enabled',
       sql: "SELECT NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')",
-      expectation: { expects: 'absent', object: 'extension "vector"' },
+      expectation: { expects: "absent", object: 'extension "vector"' },
     },
   ],
-})
+});
 ```
 
 Leave it out of a check about data or about several objects at once, such as a check that a column holds no NULL values.
@@ -355,18 +373,18 @@ For each insert in your extension's code that stops compiling, add a real value 
 
 `SupabaseRuntime.forRole(binding)` returns a `SupabaseRoleScope`, the runtime operations under one role: `query`, `execute`, the prepared-statement operations and `connection`. Run a transaction under the role with `withTransaction(runtime.forRole(binding), fn)`.
 
-| Type | New required members |
-| --- | --- |
-| `RoleBoundDb`, `ServiceRoleDb` | `enums`, `nativeEnums` |
-| `SupabaseTransactionContext` | `enums`, `nativeEnums` (it is now `PostgresTransactionContext`) |
-| `SupabaseRuntime` | `forRole(binding)`, in place of the four `*WithRole` methods |
+| Type                           | New required members                                            |
+| ------------------------------ | --------------------------------------------------------------- |
+| `RoleBoundDb`, `ServiceRoleDb` | `enums`, `nativeEnums`                                          |
+| `SupabaseTransactionContext`   | `enums`, `nativeEnums` (it is now `PostgresTransactionContext`) |
+| `SupabaseRuntime`              | `forRole(binding)`, in place of the four `*WithRole` methods    |
 
 ```ts
 // Before
-const rows = await runtime.queryWithRole(plan, { role: 'anon' }).toArray();
+const rows = await runtime.queryWithRole(plan, { role: "anon" }).toArray();
 
 // After
-const rows = await runtime.forRole({ role: 'anon' }).query(plan).toArray();
+const rows = await runtime.forRole({ role: "anon" }).query(plan).toArray();
 ```
 
 The statements and the open transactions on a raw connection keep `close()` waiting; a connection held between statements does not, so release it when you are done:
@@ -374,7 +392,7 @@ The statements and the open transactions on a raw connection keep `close()` wait
 ```ts
 const connection = await this.acquireRawConnection({ activityParent });
 try {
-  await connection.execute({ sql: 'SELECT 1' });
+  await connection.execute({ sql: "SELECT 1" });
 } finally {
   await connection.release();
 }

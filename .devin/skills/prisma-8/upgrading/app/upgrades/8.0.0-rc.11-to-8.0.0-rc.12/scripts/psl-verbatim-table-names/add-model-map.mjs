@@ -19,10 +19,10 @@
  * schema inferred after upgrading already names its tables verbatim.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { glob } from 'node:fs/promises';
-import { argv, exit, stderr, stdout } from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from "node:fs";
+import { glob } from "node:fs/promises";
+import { argv, exit, stderr, stdout } from "node:process";
+import { fileURLToPath } from "node:url";
 
 const MODEL_LINE = /^\s*model\s/;
 const MODEL_START = /^(\s*)model\s+([A-Za-z_][A-Za-z0-9_]*)\s*(\{)?(.*)$/;
@@ -46,7 +46,7 @@ function bodyIndent(lines, start, end, headerIndent) {
 }
 
 function stripCr(line) {
-  return line.replace(/\r$/, '');
+  return line.replace(/\r$/, "");
 }
 
 /**
@@ -83,7 +83,7 @@ function readModelStart(lines, index) {
     const braceAt = nextNonBlankIndex(lines, index);
     const next = lines[braceAt];
     if (next === undefined || !OPEN_BRACE_LINE.test(stripCr(next))) return undefined;
-    return { indent, modelName, bodyStart: braceAt + 1, inlineBody: '', singleLine: false };
+    return { indent, modelName, bodyStart: braceAt + 1, inlineBody: "", singleLine: false };
   }
   const closeAt = closingBraceIndex(rest);
   if (closeAt !== -1) {
@@ -93,7 +93,7 @@ function readModelStart(lines, index) {
     indent,
     modelName,
     bodyStart: index + 1,
-    inlineBody: BLANK_OR_COMMENT.test(rest) ? '' : rest,
+    inlineBody: BLANK_OR_COMMENT.test(rest) ? "" : rest,
     singleLine: false,
   };
 }
@@ -104,11 +104,11 @@ function stripLineComment(text) {
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
     if (quoted) {
-      if (char === '\\') i += 1;
+      if (char === "\\") i += 1;
       else if (char === '"') quoted = false;
     } else if (char === '"') {
       quoted = true;
-    } else if (char === '/' && text[i + 1] === '/') {
+    } else if (char === "/" && text[i + 1] === "/") {
       return text.slice(0, i).trimEnd();
     }
   }
@@ -118,7 +118,7 @@ function stripLineComment(text) {
 /** Index of a `}` that ends the block on this line (only whitespace or a `//` comment may follow), else -1. */
 function closingBraceIndex(text) {
   const code = stripLineComment(text);
-  const closeAt = code.lastIndexOf('}');
+  const closeAt = code.lastIndexOf("}");
   return closeAt !== -1 && /^\s*$/.test(code.slice(closeAt + 1)) ? closeAt : -1;
 }
 
@@ -133,7 +133,7 @@ function addMapToSingleLineModel(line, modelName) {
 /** Thrown when a `model` declaration is written in a shape the codemod does not recognise. */
 export class UnhandledModelError extends Error {
   constructor(lineNumbers) {
-    super(`model block(s) not understood at line(s) ${lineNumbers.join(', ')}`);
+    super(`model block(s) not understood at line(s) ${lineNumbers.join(", ")}`);
     this.lineNumbers = lineNumbers;
   }
 }
@@ -145,8 +145,8 @@ export class UnhandledModelError extends Error {
  * default lowered the first letter.
  */
 export function addModelMapsWithReport(source) {
-  const newline = source.includes('\r\n') ? '\r' : '';
-  const lines = source.split('\n');
+  const newline = source.includes("\r\n") ? "\r" : "";
+  const lines = source.split("\n");
   const out = [];
   const unhandled = [];
   const mapped = [];
@@ -189,7 +189,7 @@ export function addModelMapsWithReport(source) {
     i = close + 1;
   }
   if (unhandled.length > 0) throw new UnhandledModelError(unhandled);
-  return { source: out.join('\n'), mapped };
+  return { source: out.join("\n"), mapped };
 }
 
 export function addModelMaps(source) {
@@ -213,18 +213,18 @@ async function expandPatterns(patterns) {
 async function main() {
   const patterns = argv.slice(2);
   if (patterns.length === 0) {
-    stderr.write('usage: node add-model-map.mjs <file-or-glob> [...more]\n');
+    stderr.write("usage: node add-model-map.mjs <file-or-glob> [...more]\n");
     exit(2);
   }
   const files = await expandPatterns(patterns);
   if (files.length === 0) {
-    stderr.write('no files matched\n');
+    stderr.write("no files matched\n");
     exit(1);
   }
   let failed = false;
   let mappedCount = 0;
   for (const file of files) {
-    const before = readFileSync(file, 'utf8');
+    const before = readFileSync(file, "utf8");
     let result;
     try {
       result = addModelMapsWithReport(before);

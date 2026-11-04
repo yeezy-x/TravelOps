@@ -185,7 +185,7 @@ changes:
     detection:
       glob: "**/*.{ts,mts,cts,tsx}"
       matches:
-        - 'PSL_PRESET_'
+        - "PSL_PRESET_"
   - id: field-presets-in-extension-code
     summary: |
       Code and documentation in an extension that calls a field preset, such as `field.id.uuidv4String()` in a test contract, a README or a message, uses the replacement of the app guide's tables: `field.column(type.UuidString()).id().onCreate(gen.uuid())`. A package that exports `field` and `gen` built by `createComposedAuthoringHelpers` for use outside a contract also exports `type` from the same call. The detection matches files that call a preset.
@@ -329,10 +329,10 @@ Every MongoDB contract source, `defineContract`, Prisma 8 PSL and the Prisma 6 r
 Pass the MongoDB target pack as `target`:
 
 ```typescript
-import { mongoContract } from '@prisma/orm-family-mongo/contract-psl/provider';
-import mongoTargetPack from '@prisma/orm-target-mongo/target/pack';
+import { mongoContract } from "@prisma/orm-family-mongo/contract-psl/provider";
+import mongoTargetPack from "@prisma/orm-target-mongo/target/pack";
 
-const contract = mongoContract('./prisma/schema.prisma', { target: mongoTargetPack });
+const contract = mongoContract("./prisma/schema.prisma", { target: mongoTargetPack });
 ```
 
 Keep any other options you pass, such as `output`, in the same object. A config that names its contract through `defineConfig({ contract: './prisma/schema.prisma' })` from `@prisma/orm-mongo/config` already passes the pack. A call without `target` is refused with `CONTRACT.ARGUMENT_INVALID` (`reason: 'target-pack-missing'`).
@@ -342,7 +342,7 @@ Keep any other options you pass, such as `output`, in the same object. A config 
 The type of the object you pass to `defineContract` is now `ContractInput`, as it is in SQL. Rename the import and each use:
 
 ```typescript
-import type { ContractInput } from '@prisma/orm-family-mongo/contract-ts/contract-builder';
+import type { ContractInput } from "@prisma/orm-family-mongo/contract-ts/contract-builder";
 ```
 
 ### `mongo-model-definition-removed`
@@ -350,8 +350,8 @@ import type { ContractInput } from '@prisma/orm-family-mongo/contract-ts/contrac
 `MongoModelDefinition` was an alias for a model of a built contract. SQL has no such alias. Write the type it stood for:
 
 ```typescript
-import type { ContractModel } from '@prisma/orm-framework/contract/types';
-import type { MongoModelStorage } from '@prisma/orm-family-mongo/contract';
+import type { ContractModel } from "@prisma/orm-framework/contract/types";
+import type { MongoModelStorage } from "@prisma/orm-family-mongo/contract";
 
 function collectionOf(model: ContractModel<MongoModelStorage>): string | undefined {
   return model.storage.collection;
@@ -365,12 +365,12 @@ The detection matches a file that imports the MongoDB contract builder and decla
 A discriminator must be a required text field, and each variant must be declared and stored in its base's collection:
 
 ```typescript
-const Task = model('Task', {
-  collection: 'tasks',
+const Task = model("Task", {
+  collection: "tasks",
   fields: { _id: field.objectId(), type: field.string() },
-  discriminator: { field: 'type', variants: { Bug: { value: 'bug' } } },
+  discriminator: { field: "type", variants: { Bug: { value: "bug" } } },
 });
-const Bug = model('Bug', { base: Task, fields: { severity: field.int32() } });
+const Bug = model("Bug", { base: Task, fields: { severity: field.int32() } });
 ```
 
 ### `mongo-index-shape-rules`
@@ -393,11 +393,11 @@ Emit the contract again and sign the database, so `db verify` compares against t
 
 On PostgreSQL, a column type that several codecs read now names the kind of value in its name. The `Temporal` types gain the suffix `Temporal`, and the interval type that reads `{ months, days, micros }` gains the suffix `Parts`:
 
-| Before | After | Reads |
-| --- | --- | --- |
-| `Timestamptz(p?)` | `TimestamptzTemporal(p?)` | `Temporal.Instant` |
-| `Timestamp(p?)` | `TimestampTemporal(p?)` | `Temporal.PlainDateTime` |
-| `Interval(p?)` | `IntervalParts(p?)` | `{ months, days, micros }` |
+| Before            | After                     | Reads                      |
+| ----------------- | ------------------------- | -------------------------- |
+| `Timestamptz(p?)` | `TimestamptzTemporal(p?)` | `Temporal.Instant`         |
+| `Timestamp(p?)`   | `TimestampTemporal(p?)`   | `Temporal.PlainDateTime`   |
+| `Interval(p?)`    | `IntervalParts(p?)`       | `{ months, days, micros }` |
 
 This change leaves `DateTime`, `Date` and `Time` as they are, and adds `DateTemporal` and `TimeTemporal` as the explicit names of what `Date` and `Time` read today. A later release gives `DateTime`, `Date` and `Time` new meanings, as convenience date and time types, and brings its own instructions. To keep what a field reads today through that change, you can already write the explicit name: `TimestamptzTemporal` for `DateTime`, `DateTemporal` for `Date` and `TimeTemporal` for `Time`.
 
@@ -428,7 +428,7 @@ field.column(intervalPartsColumn(6)); // was intervalColumn(6)
 ### `interval-with-precision-typed-as-parts`
 
 ```ts
-import type { PgInterval } from '@prisma/orm-postgres/target/codec-types';
+import type { PgInterval } from "@prisma/orm-postgres/target/codec-types";
 
 const span: PgInterval = row.span; // an IntervalParts(6) column
 ```
@@ -438,18 +438,15 @@ const span: PgInterval = row.span; // an IntervalParts(6) column
 Remove the four names from the import, and leave the rest of the file as it is:
 
 ```ts
-import type {
-  CodecTypes as PgTypes,
-  JsonValue,
-} from '@prisma/orm-postgres/target/codec-types'; // was also importing Interval, Time, Timestamp and Timestamptz
+import type { CodecTypes as PgTypes, JsonValue } from "@prisma/orm-postgres/target/codec-types"; // was also importing Interval, Time, Timestamp and Timestamptz
 ```
 
 ### `temporal-types-from-temporal-spec`
 
 ```ts
-import type { Temporal } from 'temporal-spec';
+import type { Temporal } from "temporal-spec";
 
-expectTypeOf<Row['createdAt']>().toEqualTypeOf<Temporal.Instant>();
+expectTypeOf<Row["createdAt"]>().toEqualTypeOf<Temporal.Instant>();
 ```
 
 If the test file also creates `Temporal` values, import the type under another name, such as `import type { Temporal as TemporalTypes } from 'temporal-spec'`, so the runtime `Temporal` stays in scope.
@@ -465,7 +462,7 @@ No change is needed now. The next `prisma contract emit` adds rows for the three
 A target can now state the settings every database session needs, as data on its descriptor:
 
 ```ts
-const target = { ...meta, sessionSettings: { DateStyle: 'ISO' } };
+const target = { ...meta, sessionSettings: { DateStyle: "ISO" } };
 ```
 
 `createExecutionStack` and `createControlStack` pass them to the driver. A runtime driver descriptor receives them as the second argument of `create`, after its own options; a control driver receives them in its connect options:
@@ -564,7 +561,7 @@ Rewrite every preset call in the extension's code, test contracts, messages, doc
 If your package exports `field` and `gen` from a `createComposedAuthoringHelpers(...)` call so that code outside a contract, such as a query fragment, can declare fields, export that call's `type` too, with a doc comment that names an example such as `type.TimestamptzTemporal()`:
 
 ```ts
-export const type: Helpers['type'] = helpers.type;
+export const type: Helpers["type"] = helpers.type;
 ```
 
 Add it wherever the package re-exports `field` and `gen`, and replace the preset examples in the doc comment of `field` with `field.column(type.X())` examples. The app upgrade guide's section `ts-field-presets-removed` covers the rest of a `defineContract` callback: a name `type` that is already bound, code that does not know its target, and a `field` imported outside a callback.

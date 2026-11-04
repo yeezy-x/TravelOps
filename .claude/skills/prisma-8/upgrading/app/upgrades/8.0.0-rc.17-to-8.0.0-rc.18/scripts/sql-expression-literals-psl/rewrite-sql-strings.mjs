@@ -11,34 +11,34 @@
  * changed file is printed with its number of rewrites. Running it twice is a no-op.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { glob } from 'node:fs/promises';
-import { argv, exit, stderr, stdout } from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync } from "node:fs";
+import { glob } from "node:fs/promises";
+import { argv, exit, stderr, stdout } from "node:process";
+import { fileURLToPath } from "node:url";
 
 const ATTRIBUTE_START = /@@(index|fullTextIndex|check)\s*\(/g;
 const ATTRIBUTE_ARGUMENT = /^(where|expression)\s*:\s*$/;
 const POLICY_START = /^[ \t]*policy_[A-Za-z]+\s+[A-Za-z_][A-Za-z0-9_]*\s*\{/gm;
 const POLICY_ENTRY = /(^|\n)([ \t]*(using|withCheck)\s*=\s*)$/;
-const TAG = 'sql';
+const TAG = "sql";
 
 /** The end (exclusive) of the quoted string that starts at `start`, or -1 when it is not closed. */
 function stringEnd(source, start) {
   const quote = source[start];
   for (let i = start + 1; i < source.length; i += 1) {
-    if (source[i] === '\\') {
+    if (source[i] === "\\") {
       i += 1;
       continue;
     }
     if (source[i] === quote) return i + 1;
-    if (source[i] === '\n') return -1;
+    if (source[i] === "\n") return -1;
   }
   return -1;
 }
 
 /** The index of the line break that ends the `//` comment starting at `start`, or the source length. */
 function commentEnd(source, start) {
-  const newline = source.indexOf('\n', start);
+  const newline = source.indexOf("\n", start);
   return newline === -1 ? source.length : newline;
 }
 
@@ -53,14 +53,14 @@ function inertRanges(source) {
       i = end === -1 ? commentEnd(source, i) : end - 1;
       continue;
     }
-    if (ch === '`') {
-      const end = source.indexOf('`', i + 1);
+    if (ch === "`") {
+      const end = source.indexOf("`", i + 1);
       if (end === -1) continue;
       ranges.push([i, end + 1]);
       i = end;
       continue;
     }
-    if (ch === '/' && source[i + 1] === '/') {
+    if (ch === "/" && source[i + 1] === "/") {
       const end = commentEnd(source, i);
       ranges.push([i, end]);
       i = end;
@@ -74,14 +74,14 @@ function closingEnd(source, open, openChar, closeChar) {
   let depth = 0;
   for (let i = open; i < source.length; i += 1) {
     const ch = source[i];
-    if (ch === '"' || ch === "'" || ch === '`') {
-      const end = ch === '`' ? source.indexOf('`', i + 1) + 1 : stringEnd(source, i);
+    if (ch === '"' || ch === "'" || ch === "`") {
+      const end = ch === "`" ? source.indexOf("`", i + 1) + 1 : stringEnd(source, i);
       if (end <= 0) return -1;
       i = end - 1;
       continue;
     }
-    if (ch === '/' && source[i + 1] === '/') {
-      const newline = source.indexOf('\n', i);
+    if (ch === "/" && source[i + 1] === "/") {
+      const newline = source.indexOf("\n", i);
       if (newline === -1) return -1;
       i = newline;
       continue;
@@ -103,23 +103,23 @@ function hexAt(raw, start, length) {
 }
 
 const SIMPLE_ESCAPES = {
-  '/': '/',
-  b: '\b',
-  f: '\f',
-  n: '\n',
-  r: '\r',
-  t: '\t',
+  "/": "/",
+  b: "\b",
+  f: "\f",
+  n: "\n",
+  r: "\r",
+  t: "\t",
   '"': '"',
   "'": "'",
-  '\\': '\\',
+  "\\": "\\",
 };
 
 /** The text of a PSL string literal body, decoded as the PSL parser decodes it. */
 export function decodePslString(raw) {
-  let out = '';
+  let out = "";
   for (let i = 0; i < raw.length; i += 1) {
     const ch = raw[i];
-    if (ch !== '\\' || i + 1 >= raw.length) {
+    if (ch !== "\\" || i + 1 >= raw.length) {
       out += ch;
       continue;
     }
@@ -129,7 +129,7 @@ export function decodePslString(raw) {
       i += 1;
       continue;
     }
-    const length = next === 'x' ? 2 : next === 'u' ? 4 : 0;
+    const length = next === "x" ? 2 : next === "u" ? 4 : 0;
     const decoded = length === 0 ? undefined : hexAt(raw, i + 2, length);
     if (decoded === undefined) {
       out += `\\${next}`;
@@ -144,16 +144,16 @@ export function decodePslString(raw) {
 
 /** A `sql` literal holding `text`: the backtick form, or the double-quote form when the text holds a backtick. A backtick body doubles a backslash only before another backslash or at its end, where it would be read as an escape. */
 export function printSqlLiteral(text) {
-  if (text.includes('`')) {
+  if (text.includes("`")) {
     const escaped = text
-      .replace(/\\/g, '\\\\')
+      .replace(/\\/g, "\\\\")
       .replace(/"/g, '\\"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r');
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r");
     return `${TAG}"${escaped}"`;
   }
-  const fenced = text.replace(/\\(?=\\|$)/g, '\\\\');
-  return text.includes('\n') ? `${TAG}\`\n${fenced}\n\`` : `${TAG}\`${fenced}\``;
+  const fenced = text.replace(/\\(?=\\|$)/g, "\\\\");
+  return text.includes("\n") ? `${TAG}\`\n${fenced}\n\`` : `${TAG}\`${fenced}\``;
 }
 
 /** The quoted strings to rewrite, as `[start, end)` ranges of `source`. */
@@ -164,13 +164,13 @@ function stringRanges(source) {
   for (const match of source.matchAll(ATTRIBUTE_START)) {
     if (isInert(match.index)) continue;
     const open = match.index + match[0].length - 1;
-    const close = closingEnd(source, open, '(', ')');
+    const close = closingEnd(source, open, "(", ")");
     if (close === -1) continue;
     let depth = 0;
     let argumentStart = open + 1;
     for (let i = open + 1; i < close - 1; i += 1) {
       const ch = source[i];
-      if (ch === '/' && source[i + 1] === '/') {
+      if (ch === "/" && source[i + 1] === "/") {
         i = commentEnd(source, i);
         continue;
       }
@@ -182,24 +182,24 @@ function stringRanges(source) {
         i = end - 1;
         continue;
       }
-      if (ch === '`') {
-        i = source.indexOf('`', i + 1);
+      if (ch === "`") {
+        i = source.indexOf("`", i + 1);
         if (i === -1) break;
         continue;
       }
-      if (ch === '(' || ch === '[' || ch === '{') depth += 1;
-      if (ch === ')' || ch === ']' || ch === '}') depth -= 1;
-      if (ch === ',' && depth === 0) argumentStart = i + 1;
+      if (ch === "(" || ch === "[" || ch === "{") depth += 1;
+      if (ch === ")" || ch === "]" || ch === "}") depth -= 1;
+      if (ch === "," && depth === 0) argumentStart = i + 1;
     }
   }
   for (const match of source.matchAll(POLICY_START)) {
     if (isInert(match.index + match[0].search(/\S/))) continue;
     const open = match.index + match[0].length - 1;
-    const close = closingEnd(source, open, '{', '}');
+    const close = closingEnd(source, open, "{", "}");
     if (close === -1) continue;
     for (let i = open + 1; i < close - 1; i += 1) {
       const ch = source[i];
-      if (ch === '/' && source[i + 1] === '/') {
+      if (ch === "/" && source[i + 1] === "/") {
         i = commentEnd(source, i);
         continue;
       }
@@ -210,8 +210,8 @@ function stringRanges(source) {
         i = end - 1;
         continue;
       }
-      if (ch === '`') {
-        i = source.indexOf('`', i + 1);
+      if (ch === "`") {
+        i = source.indexOf("`", i + 1);
         if (i === -1) break;
       }
     }
@@ -222,7 +222,7 @@ function stringRanges(source) {
 /** Rewrites `source` and returns it with the number of strings rewritten. */
 export function rewriteSqlStringsWithCount(source) {
   const ranges = stringRanges(source);
-  let out = '';
+  let out = "";
   let position = 0;
   for (const [start, end] of ranges) {
     out += source.slice(position, start);
@@ -254,11 +254,11 @@ async function filesMatching(patterns) {
 async function main() {
   const patterns = argv.slice(2);
   if (patterns.length === 0) {
-    stderr.write('usage: node rewrite-sql-strings.mjs <file-or-glob> [...more]\n');
+    stderr.write("usage: node rewrite-sql-strings.mjs <file-or-glob> [...more]\n");
     exit(2);
   }
   for (const file of await filesMatching(patterns)) {
-    const before = readFileSync(file, 'utf8');
+    const before = readFileSync(file, "utf8");
     const { source, count } = rewriteSqlStringsWithCount(before);
     if (count === 0) continue;
     writeFileSync(file, source);

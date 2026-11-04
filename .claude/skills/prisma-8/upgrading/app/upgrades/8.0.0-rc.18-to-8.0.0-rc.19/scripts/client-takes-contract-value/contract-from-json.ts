@@ -16,19 +16,19 @@
 // when TypeScript is not installed or an argument is wrong. It skips node_modules, dist, build and every directory whose
 // name starts with a dot, such as .git, .agents or .claude, and links that lead nowhere.
 
-import { readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { join, relative, resolve } from 'node:path';
-import type * as TS from 'typescript';
+import { readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { join, relative, resolve } from "node:path";
+import type * as TS from "typescript";
 
 const SOURCE_FILE = /\.(?:ts|tsx|mts|cts)$/;
 const TEST_FILE = /\.(?:test|spec)(?:-d)?\.[cm]?tsx?$/;
-const TEST_DIRECTORIES = new Set(['test', 'tests', '__tests__']);
-const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist', 'build']);
+const TEST_DIRECTORIES = new Set(["test", "tests", "__tests__"]);
+const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build"]);
 const FACADE_ENTRY =
   /^@prisma\/orm-(postgres|sqlite|mongo)\/(?:runtime|serverless|static|query-builder)$/;
-const SUPABASE_ENTRY = '@prisma/orm-extension-supabase/runtime';
-const FACTORY_EXPORTS = new Set(['default', 'supabase', 'mongoQuery']);
+const SUPABASE_ENTRY = "@prisma/orm-extension-supabase/runtime";
+const FACTORY_EXPORTS = new Set(["default", "supabase", "mongoQuery"]);
 const DETECTION =
   /(?<![\w$.])(?:postgres|postgresServerless|sqlite|supabase|mongo|postgresStatic|sqliteStatic|mongoStatic|mongoQuery)(?:<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>)?\(\s*\{(?:(?:[^{}]|\{[^{}]*\})*?,)?\s*contractJson\s*[,}:]/;
 
@@ -48,23 +48,23 @@ interface MovedCall {
 }
 
 type Outcome =
-  | { readonly kind: 'unchanged' }
-  | { readonly kind: 'rewritten'; readonly source: string; readonly exported: boolean }
-  | { readonly kind: 'refused'; readonly reason: string };
+  | { readonly kind: "unchanged" }
+  | { readonly kind: "rewritten"; readonly source: string; readonly exported: boolean }
+  | { readonly kind: "refused"; readonly reason: string };
 
 function staticEntryOf(specifier: string): string | undefined {
   const facade = FACADE_ENTRY.exec(specifier);
   if (facade !== null) return `@prisma/orm-${facade[1]}/static`;
-  return specifier === SUPABASE_ENTRY ? '@prisma/orm-postgres/static' : undefined;
+  return specifier === SUPABASE_ENTRY ? "@prisma/orm-postgres/static" : undefined;
 }
 
 function specifierOf(ts: typeof TS, statement: TS.ImportDeclaration): string {
-  return ts.isStringLiteral(statement.moduleSpecifier) ? statement.moduleSpecifier.text : '';
+  return ts.isStringLiteral(statement.moduleSpecifier) ? statement.moduleSpecifier.text : "";
 }
 
 function compareSpecifiers(left: string, right: string): number {
   const rank = (specifier: string) =>
-    specifier.startsWith('node:') ? 0 : specifier.startsWith('.') ? 2 : 1;
+    specifier.startsWith("node:") ? 0 : specifier.startsWith(".") ? 2 : 1;
   return rank(left) - rank(right) || (left < right ? -1 : left > right ? 1 : 0);
 }
 
@@ -200,7 +200,7 @@ function destructuredContractEdit(
       element.propertyName === undefined &&
       element.initializer === undefined &&
       ts.isIdentifier(element.name) &&
-      element.name.text === 'contract',
+      element.name.text === "contract",
   );
   const element = pattern.elements[index];
   if (element === undefined) return undefined;
@@ -218,15 +218,15 @@ function destructuredContractEdit(
       return undefined;
     return {
       binding: element.name,
-      edit: { start: statement.getStart(sourceFile), end: call.getStart(sourceFile), text: '' },
+      edit: { start: statement.getStart(sourceFile), end: call.getStart(sourceFile), text: "" },
     };
   }
   const next = pattern.elements[index + 1];
   const previous = pattern.elements[index - 1];
   const edit =
     next !== undefined
-      ? { start: element.getStart(sourceFile), end: next.getStart(sourceFile), text: '' }
-      : { start: previous?.end ?? element.getStart(sourceFile), end: element.end, text: '' };
+      ? { start: element.getStart(sourceFile), end: next.getStart(sourceFile), text: "" }
+      : { start: previous?.end ?? element.getStart(sourceFile), end: element.end, text: "" };
   return { binding: element.name, edit };
 }
 
@@ -258,7 +258,7 @@ function contractJsonProperty(ts: typeof TS, object: TS.ObjectLiteralExpression)
     (property): property is TS.ShorthandPropertyAssignment | TS.PropertyAssignment =>
       (ts.isShorthandPropertyAssignment(property) || ts.isPropertyAssignment(property)) &&
       (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) &&
-      property.name.text === 'contractJson',
+      property.name.text === "contractJson",
   );
 }
 
@@ -279,14 +279,14 @@ function movedCalls(
           : undefined;
       if (staticEntry !== undefined && property !== undefined) {
         const edits: Edit[] = [
-          { start: property.getStart(sourceFile), end: property.end, text: 'contract' },
+          { start: property.getStart(sourceFile), end: property.end, text: "contract" },
         ];
         const typeArguments = node.typeArguments;
         if (typeArguments !== undefined) {
           edits.push({
             start: node.expression.end,
-            end: source.indexOf('>', typeArguments.end) + 1,
-            text: '',
+            end: source.indexOf(">", typeArguments.end) + 1,
+            text: "",
           });
         }
         calls.push({
@@ -294,14 +294,14 @@ function movedCalls(
           edits,
           typeArguments:
             typeArguments === undefined
-              ? ''
-              : `<${typeArguments.map((type) => type.getText(sourceFile)).join(', ')}>`,
+              ? ""
+              : `<${typeArguments.map((type) => type.getText(sourceFile)).join(", ")}>`,
           json: ts.isPropertyAssignment(property)
             ? property.initializer.getText(sourceFile)
-            : 'contractJson',
+            : "contractJson",
           jsonNames: ts.isPropertyAssignment(property)
             ? identifiersIn(ts, property.initializer)
-            : ['contractJson'],
+            : ["contractJson"],
           staticEntry,
         });
       }
@@ -330,15 +330,15 @@ function importEdit(
   if (bindings !== undefined && ts.isNamedImports(bindings)) {
     const first = bindings.elements[0];
     return first === undefined
-      ? { start: bindings.getStart(sourceFile), end: bindings.end, text: '{ contractFromJson }' }
+      ? { start: bindings.getStart(sourceFile), end: bindings.end, text: "{ contractFromJson }" }
       : {
           start: first.getStart(sourceFile),
           end: first.getStart(sourceFile),
-          text: 'contractFromJson, ',
+          text: "contractFromJson, ",
         };
   }
   if (clause?.name !== undefined && bindings === undefined) {
-    return { start: clause.name.end, end: clause.name.end, text: ', { contractFromJson }' };
+    return { start: clause.name.end, end: clause.name.end, text: ", { contractFromJson }" };
   }
   const line = `import { contractFromJson } from ${style.quote}${staticEntry}${style.quote}${style.semicolon}`;
   const before = imports.find(
@@ -357,7 +357,7 @@ export function moveFile(ts: typeof TS, fileName: string, source: string): Outco
     source,
     ts.ScriptTarget.Latest,
     true,
-    fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const imports = sourceFile.statements.filter(ts.isImportDeclaration);
   const calls = movedCalls(ts, sourceFile, factoriesOf(ts, imports));
@@ -365,10 +365,10 @@ export function moveFile(ts: typeof TS, fileName: string, source: string): Outco
   if (first === undefined) {
     return DETECTION.test(source)
       ? {
-          kind: 'refused',
-          reason: 'it passes contractJson to a client in a form the script cannot read',
+          kind: "refused",
+          reason: "it passes contractJson to a client in a form the script cannot read",
         }
-      : { kind: 'unchanged' };
+      : { kind: "unchanged" };
   }
   if (
     calls.some(
@@ -379,8 +379,8 @@ export function moveFile(ts: typeof TS, fileName: string, source: string): Outco
     )
   ) {
     return {
-      kind: 'refused',
-      reason: 'its clients use different contracts; give each its own contractFromJson value',
+      kind: "refused",
+      reason: "its clients use different contracts; give each its own contractFromJson value",
     };
   }
   const names = topLevelNames(ts, sourceFile);
@@ -392,7 +392,7 @@ export function moveFile(ts: typeof TS, fileName: string, source: string): Outco
   );
   if (inner !== undefined) {
     return {
-      kind: 'refused',
+      kind: "refused",
       reason: `its contractJson value uses ${inner}, which is a parameter or local binding where the client is created, not a value the top of the file can read; pass contract: contractFromJson${first.typeArguments}(${first.json}) to the call instead of contractJson, and import contractFromJson from ${first.staticEntry}`,
     };
   }
@@ -400,13 +400,13 @@ export function moveFile(ts: typeof TS, fileName: string, source: string): Outco
   const destructured = calls
     .map((call) => destructuredContractEdit(ts, sourceFile, call.node, exported))
     .filter((found) => found !== undefined);
-  const binding = bindingsOf(ts, sourceFile, 'contract').find(
+  const binding = bindingsOf(ts, sourceFile, "contract").find(
     (found) => !destructured.some((entry) => entry.binding === found),
   );
   if (binding !== undefined) {
     const line = sourceFile.getLineAndCharacterOfPosition(binding.getStart(sourceFile)).line + 1;
     return {
-      kind: 'refused',
+      kind: "refused",
       reason: ts.isExportSpecifier(binding.parent)
         ? `it exports contract in an export statement (line ${line}); remove contract from that statement and run the script again`
         : `it already has a binding named contract (line ${line}); rename that binding and run the script again`,
@@ -415,44 +415,44 @@ export function moveFile(ts: typeof TS, fileName: string, source: string): Outco
   const local = first.jsonNames.find((name) => names.declared.has(name));
   if (local !== undefined) {
     return {
-      kind: 'refused',
+      kind: "refused",
       reason: `its contractJson value uses ${local}, which the file declares after its imports; declare the contract value after ${local} by hand`,
     };
   }
 
   const lastImport = imports.at(-1);
   if (lastImport === undefined) {
-    return { kind: 'refused', reason: 'it imports no client' };
+    return { kind: "refused", reason: "it imports no client" };
   }
   const firstImport = imports[0];
-  const firstImportText = firstImport?.getText(sourceFile) ?? '';
+  const firstImportText = firstImport?.getText(sourceFile) ?? "";
   const style = {
     quote: firstImport?.moduleSpecifier.getText(sourceFile).startsWith('"') ? '"' : "'",
-    semicolon: firstImportText.endsWith(';') ? ';' : '',
-    eol: source.includes('\r\n') ? '\r\n' : '\n',
+    semicolon: firstImportText.endsWith(";") ? ";" : "",
+    eol: source.includes("\r\n") ? "\r\n" : "\n",
   };
   const edits: Edit[] = [
     ...calls.flatMap((call) => call.edits),
     ...destructured.map((entry) => entry.edit),
   ];
   const staticImport = importEdit(ts, sourceFile, imports, first.staticEntry, style);
-  const importedAfter = 'after' in staticImport ? staticImport.after : '';
-  if ('start' in staticImport) edits.push(staticImport);
+  const importedAfter = "after" in staticImport ? staticImport.after : "";
+  if ("start" in staticImport) edits.push(staticImport);
 
   let afterImports = lastImport.end;
-  while (source[afterImports] === '\r' || source[afterImports] === '\n') afterImports++;
-  const declaration = `${exported ? 'export ' : ''}const contract = contractFromJson${first.typeArguments}(${first.json})${style.semicolon}`;
+  while (source[afterImports] === "\r" || source[afterImports] === "\n") afterImports++;
+  const declaration = `${exported ? "export " : ""}const contract = contractFromJson${first.typeArguments}(${first.json})${style.semicolon}`;
   edits.push({
     start: lastImport.end,
     end: afterImports,
-    text: `${importedAfter}${style.eol}${style.eol}${declaration}${style.eol}${afterImports < source.length ? style.eol : ''}`,
+    text: `${importedAfter}${style.eol}${style.eol}${declaration}${style.eol}${afterImports < source.length ? style.eol : ""}`,
   });
 
   let moved = source;
   for (const edit of [...edits].sort((left, right) => right.start - left.start)) {
     moved = moved.slice(0, edit.start) + edit.text + moved.slice(edit.end);
   }
-  return { kind: 'rewritten', source: moved, exported };
+  return { kind: "rewritten", source: moved, exported };
 }
 
 function hasDefaultExport(ts: typeof TS, sourceFile: TS.SourceFile): boolean {
@@ -462,7 +462,7 @@ function hasDefaultExport(ts: typeof TS, sourceFile: TS.SourceFile): boolean {
       (ts.isExportDeclaration(statement) &&
         statement.exportClause !== undefined &&
         ts.isNamedExports(statement.exportClause) &&
-        statement.exportClause.elements.some((element) => element.name.text === 'default')) ||
+        statement.exportClause.elements.some((element) => element.name.text === "default")) ||
       (ts.canHaveModifiers(statement) &&
         (ts.getModifiers(statement)?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword) ??
           false)),
@@ -500,11 +500,11 @@ function sourceFiles(root: string): string[] {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.isDirectory() || (entry.isSymbolicLink() && isDirectory(path))) {
-        if (!SKIPPED_DIRECTORIES.has(entry.name) && !entry.name.startsWith('.')) visit(path);
+        if (!SKIPPED_DIRECTORIES.has(entry.name) && !entry.name.startsWith(".")) visit(path);
       } else if (
         (entry.isFile() || (entry.isSymbolicLink() && isFile(path))) &&
         SOURCE_FILE.test(entry.name) &&
-        !entry.name.endsWith('.d.ts')
+        !entry.name.endsWith(".d.ts")
       ) {
         const realFile = realpathSync(path);
         if (!found.has(realFile)) found.set(realFile, path);
@@ -516,16 +516,16 @@ function sourceFiles(root: string): string[] {
 }
 
 function loadTypeScript(root: string, explicit: string | undefined): typeof TS | undefined {
-  const require = createRequire(join(root, 'package.json'));
+  const require = createRequire(join(root, "package.json"));
   try {
-    return require(explicit ?? 'typescript');
+    return require(explicit ?? "typescript");
   } catch {
     return undefined;
   }
 }
 
 const USAGE =
-  'Usage: node contract-from-json.ts [project-root] [--typescript <path to the typescript package>]';
+  "Usage: node contract-from-json.ts [project-root] [--typescript <path to the typescript package>]";
 
 function parseArgs(args: readonly string[]): {
   readonly root: string;
@@ -536,13 +536,13 @@ function parseArgs(args: readonly string[]): {
   const positional: string[] = [];
   let typescript: string | undefined;
   for (let index = 0; index < args.length; index++) {
-    const arg = args[index] ?? '';
-    if (arg === '--typescript') {
+    const arg = args[index] ?? "";
+    if (arg === "--typescript") {
       const path = args[++index];
-      if (path === undefined || path.startsWith('-'))
-        errors.push('--typescript: needs the path to the typescript package');
+      if (path === undefined || path.startsWith("-"))
+        errors.push("--typescript: needs the path to the typescript package");
       else typescript = resolve(path);
-    } else if (arg.startsWith('-')) errors.push(`${arg}: unknown option`);
+    } else if (arg.startsWith("-")) errors.push(`${arg}: unknown option`);
     else positional.push(arg);
   }
   if (positional.length > 1) errors.push(`expected one project root, got ${positional.length}`);
@@ -555,7 +555,7 @@ function parseArgs(args: readonly string[]): {
 function main(): number {
   const { root, typescript, errors } = parseArgs(process.argv.slice(2));
   if (errors.length > 0) {
-    process.stderr.write(`${errors.join('\n')}\n`);
+    process.stderr.write(`${errors.join("\n")}\n`);
     return 1;
   }
   const ts = loadTypeScript(root, typescript);
@@ -568,25 +568,25 @@ function main(): number {
 
   let refused = 0;
   for (const path of sourceFiles(root).sort()) {
-    const name = relative(root, path).split('\\').join('/');
-    const source = readFileSync(path, 'utf8');
+    const name = relative(root, path).split("\\").join("/");
+    const source = readFileSync(path, "utf8");
     const outcome: Outcome = isTestPath(name)
       ? DETECTION.test(source)
         ? {
-            kind: 'refused',
+            kind: "refused",
             reason:
-              'it is a test file; import the contract value from the module that creates the client',
+              "it is a test file; import the contract value from the module that creates the client",
           }
-        : { kind: 'unchanged' }
+        : { kind: "unchanged" }
       : moveFile(ts, path, source);
-    if (outcome.kind === 'rewritten') {
+    if (outcome.kind === "rewritten") {
       writeFileSync(path, outcome.source);
       process.stdout.write(
         outcome.exported
           ? `${name}: moved to contractFromJson\n`
           : `${name}: moved to contractFromJson; contract is not exported, because the module has a default export (a Worker treats every named export of its entry module as an entrypoint); a module that needs the value gets it from a separate module\n`,
       );
-    } else if (outcome.kind === 'refused') {
+    } else if (outcome.kind === "refused") {
       refused++;
       process.stderr.write(`${name}: not moved, because ${outcome.reason}\n`);
     }

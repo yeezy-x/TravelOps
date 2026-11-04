@@ -9,42 +9,39 @@ Shared concepts (result consumption, script teardown, cross-target pitfalls, cap
 **Postgres** (`postgres({ contract, ... })` from `@internal/postgres/runtime`):
 
 - **`db.orm.<ns>.<Model>`** — ORM, PascalCase model name (`db.orm.public.User`). Fluent `.where(...).select(...).orderBy(...).all()`, fully typed against `Contract`. Default lane for CRUD with relations.
-- **`db.sql.<ns>.<table>`** — SQL builder, lowercase storage name (`db.sql.public.user`). Produces a *plan*. A plan that returns rows (`select`, or a write with `.returning(...)`) runs through `db.query(plan)`; a write with no `RETURNING` runs through `db.execute(plan)`, which resolves `{ affectedRows }`. Use when the ORM is too high-level — explicit `JOIN`, computed projections, set operations, window functions.
+- **`db.sql.<ns>.<table>`** — SQL builder, lowercase storage name (`db.sql.public.user`). Produces a _plan_. A plan that returns rows (`select`, or a write with `.returning(...)`) runs through `db.query(plan)`; a write with no `RETURNING` runs through `db.execute(plan)`, which resolves `{ affectedRows }`. Use when the ORM is too high-level — explicit `JOIN`, computed projections, set operations, window functions.
 
 Reach for the ORM first; drop to `db.sql` when the ORM can't express the shape. Lane choice is local — one query function picks one lane, not the whole app.
 
 **Lane decision table:**
 
-| Need | Choose | Why |
-| --- | --- | --- |
-| Standard CRUD with relations | **ORM (`db.orm.<ns>.<Model>`)** | Highest ergonomics; fully typed; model-shaped. |
-| Eager-load related records | **ORM `.include(...)`** | Composes with `.where` / `.select` / `.orderBy` / `.limit` per branch. |
-| Aggregate (count, sum, avg) | **ORM `.aggregate(...)`** | Typed result; works with grouping (`.groupBy(...).aggregate(...)`). |
-| `INSERT ... RETURNING` / `UPDATE ... RETURNING` typed result | **ORM mutations** (returns updated rows) or **`db.sql.<ns>.<t>.insert(...).returning(...)`** | ORM returns inserted/updated rows; SQL builder exposes `.returning(...)` explicitly. |
-| Computed projection (e.g. `ST_DistanceSphere(location, point) AS meters`) alongside model fields | **SQL builder (`db.sql.<ns>.<t>`)** | The ORM projects model fields; arbitrary expression projection is the SQL builder's seam. |
-| Complex `JOIN`, set operation, window function | **SQL builder** | The ORM doesn't express arbitrary joins. |
-| Postgres-specific feature (`LATERAL`, `FILTER`, custom aggregates) | **SQL builder**, falling back to extension operators when the extension provides them | DSL first; extensions can contribute operators (`postgis`, `pgvector`). |
+| Need                                                                                             | Choose                                                                                       | Why                                                                                       |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Standard CRUD with relations                                                                     | **ORM (`db.orm.<ns>.<Model>`)**                                                              | Highest ergonomics; fully typed; model-shaped.                                            |
+| Eager-load related records                                                                       | **ORM `.include(...)`**                                                                      | Composes with `.where` / `.select` / `.orderBy` / `.limit` per branch.                    |
+| Aggregate (count, sum, avg)                                                                      | **ORM `.aggregate(...)`**                                                                    | Typed result; works with grouping (`.groupBy(...).aggregate(...)`).                       |
+| `INSERT ... RETURNING` / `UPDATE ... RETURNING` typed result                                     | **ORM mutations** (returns updated rows) or **`db.sql.<ns>.<t>.insert(...).returning(...)`** | ORM returns inserted/updated rows; SQL builder exposes `.returning(...)` explicitly.      |
+| Computed projection (e.g. `ST_DistanceSphere(location, point) AS meters`) alongside model fields | **SQL builder (`db.sql.<ns>.<t>`)**                                                          | The ORM projects model fields; arbitrary expression projection is the SQL builder's seam. |
+| Complex `JOIN`, set operation, window function                                                   | **SQL builder**                                                                              | The ORM doesn't express arbitrary joins.                                                  |
+| Postgres-specific feature (`LATERAL`, `FILTER`, custom aggregates)                               | **SQL builder**, falling back to extension operators when the extension provides them        | DSL first; extensions can contribute operators (`postgis`, `pgvector`).                   |
 
 ## Workflow — ORM reads
 
-The concept: `db.orm.<ns>.<Model>` returns a *collection* you compose method-by-method. Each call returns a new collection (immutable chaining); the terminal verb (`.all()` / `.first()` / `.aggregate(...)`) issues the query. There is no `.count()` terminal on the collection — `count()` is an `include` reducer and an `aggregate(...)` operation (both below). Predicates are lambdas over a field proxy: `u.field.<op>(value)`.
+The concept: `db.orm.<ns>.<Model>` returns a _collection_ you compose method-by-method. Each call returns a new collection (immutable chaining); the terminal verb (`.all()` / `.first()` / `.aggregate(...)`) issues the query. There is no `.count()` terminal on the collection — `count()` is an `include` reducer and an `aggregate(...)` operation (both below). Predicates are lambdas over a field proxy: `u.field.<op>(value)`.
 
 ```typescript
 // src/queries/users.ts — one directory deep under src/, so the import is '../prisma/db'
-import { db } from '../prisma/db';
+import { db } from "../prisma/db";
 
 // Find one record by primary key shorthand.
 const user = await db.orm.public.User.first({ id: userId });
 // Returns the full row or `null`.
 
 // Find one matching a predicate.
-const alice = await db.orm.public.User
-  .where((u) => u.email.eq('alice@example.com'))
-  .first();
+const alice = await db.orm.public.User.where((u) => u.email.eq("alice@example.com")).first();
 
 // Find many with projection, sort, and limit.
-const recentUsers = await db.orm.public.User
-  .select('id', 'email', 'createdAt')
+const recentUsers = await db.orm.public.User.select("id", "email", "createdAt")
   .orderBy((u) => u.createdAt.desc())
   .limit(10)
   .all();
@@ -54,10 +51,10 @@ const recentUsers = await db.orm.public.User
 
 ```typescript
 // Lambda form — full expression power.
-db.orm.public.User.where((u) => u.email.eq('alice@example.com'));
+db.orm.public.User.where((u) => u.email.eq("alice@example.com"));
 
 // Shorthand object form — equality on the named fields.
-db.orm.public.User.where({ kind: 'admin' });
+db.orm.public.User.where({ kind: "admin" });
 ```
 
 Operators on the field proxy include `.eq`, `.neq`, `.lt`, `.lte`, `.gt`, `.gte`, `.like`, `.ilike`, `.in([...])`, `.isNull()`, `.isNotNull()`. Extensions add target-specific operators on extension-typed columns (`pgvector`'s `.cosineDistance(...)`, `postgis`'s `.within(...)` / `.intersectsBbox(...)` / `.distanceSphere(...)`).
@@ -73,28 +70,26 @@ The four parsers are also `fns` members in the SQL builder. Each takes the text 
 Each operation takes an options object as its second argument. `language` (default `'english'`) is the configuration for the column's `to_tsvector`, the expression the index covers; the parser's or tag's own `language` governs the query side, and the two normally match. It only accepts the configurations a stock PostgreSQL server ships with (`'simple'`, `'german'`, `'french'`, …); `fullTextRank` also takes `normalization` (the `ts_rank` bitmask, 0 to 63) and `coverDensity` (for `ts_rank_cd`); `fullTextHeadline` also takes `startSel`, `stopSel`, `maxWords`, `minWords` and `highlightAll`. Every one of them is written into the SQL as a literal, so anything invalid throws `RUNTIME.ARGUMENT_INVALID` when the query is built.
 
 ```typescript
-import { tsquery, websearchToTsquery } from '@prisma/orm-postgres/target/full-text';
+import { tsquery, websearchToTsquery } from "@prisma/orm-postgres/target/full-text";
 
 // ORM: filter by the search-box query, order by relevance. Build the query once and reuse it.
 const q = websearchToTsquery(query);
-const hits = await db.orm.public.Message
-  .select('id', 'text')
+const hits = await db.orm.public.Message.select("id", "text")
   .where((m) => m.text.fullTextMatches(q))
   .orderBy((m) => m.text.fullTextRank(q).desc())
   .limit(20)
   .all();
 
 // ORM: typeahead, the typed text as a prefix term.
-const suggestions = await db.orm.public.Message
-  .select('id', 'text')
+const suggestions = await db.orm.public.Message.select("id", "text")
   .where((m) => m.text.fullTextMatches(tsquery`${term}:*`))
   .all();
 
 // SQL builder: the same query filters and highlights, so the snippet marks what selected the row.
 const snippets = db.sql.public.message
-  .select('id')
-  .select('snippet', (f, fns) =>
-    fns.fullTextHeadline(f.text, q, { startSel: '<mark>', stopSel: '</mark>', maxWords: 20 }),
+  .select("id")
+  .select("snippet", (f, fns) =>
+    fns.fullTextHeadline(f.text, q, { startSel: "<mark>", stopSel: "</mark>", maxWords: 20 }),
   )
   .where((f, fns) => fns.fullTextMatches(f.text, q))
   .build();
@@ -112,8 +107,8 @@ Give the index and the operation the same `language`: a mismatch raises no error
 In a TypeScript contract, the same helper from `@prisma/orm-postgres/contract-builder`:
 
 ```typescript
-model('Message', { fields: { id, text } }).sql(({ cols }) => ({
-  indexes: [fullTextIndex(cols.text, { name: 'message_text_search' })],
+model("Message", { fields: { id, text } }).sql(({ cols }) => ({
+  indexes: [fullTextIndex(cols.text, { name: "message_text_search" })],
 }));
 ```
 
@@ -127,11 +122,11 @@ model('Message', { fields: { id, text } }).sql(({ cols }) => ({
 
 ```typescript
 const q = websearchToTsquery(query);
-const posts = await db.orm.public.Post.select('id', 'title').using.post_search(q).limit(20).all();
+const posts = await db.orm.public.Post.select("id", "title").using.post_search(q).limit(20).all();
 const mine = await db.orm.public.Post.where({ userId }).using.post_search(q).all();
-const users = await db.orm.public.User
-  .include('posts', (posts) => posts.using.post_search(q).limit(3))
-  .all();
+const users = await db.orm.public.User.include("posts", (posts) =>
+  posts.using.post_search(q).limit(3),
+).all();
 ```
 
 The relevance order is added where the method is called: an `orderBy` before it sorts first, one after it breaks ties. A custom collection class stays the class, so `this.using.post_search(q)` works in a class method. A model with no full-text index has no full-text methods, and a misspelled name is a type error. With the pgvector extension, `using` also has `<field>_nearest(vector, maxDistance?)` for each vector field, such as `db.orm.public.Post.using.embedding_nearest(v, 0.5)`: nearest by cosine distance first. `using` is reserved: a custom class cannot define its own `using`.
@@ -142,8 +137,7 @@ In the ORM, every `where` and `orderBy` callback receives a second argument `{ f
 
 ```typescript
 const q = websearchToTsquery(query);
-const posts = await db.orm.public.Post
-  .select('id', 'title')
+const posts = await db.orm.public.Post.select("id", "title")
   .where((_p, { fns, indexes }) => fns.fullTextMatches(indexes.post_search, q))
   .orderBy((_p, { fns, indexes }) => fns.fullTextRank(indexes.post_search, q).desc())
   .limit(20)
@@ -157,9 +151,9 @@ In the SQL builder, a table's `indexes` holds the same references:
 ```typescript
 const post = db.sql.public.post;
 const posts = post
-  .select('id', 'title')
+  .select("id", "title")
   .where((_f, fns) => fns.fullTextMatches(post.indexes.post_search, q))
-  .orderBy((_f, fns) => fns.fullTextRank(post.indexes.post_search, q), { direction: 'desc' })
+  .orderBy((_f, fns) => fns.fullTextRank(post.indexes.post_search, q), { direction: "desc" })
   .build();
 ```
 
@@ -171,16 +165,13 @@ To search several columns that no index covers, build the document with `fullTex
 
 ```typescript
 // Chained .where() — each clause AND-composes with the previous one.
-await db.orm.public.Sale
-  .where((s) => s.day.gte(start))
+await db.orm.public.Sale.where((s) => s.day.gte(start))
   .where((s) => s.day.lte(end))
   .all();
 
 // Equivalent with an explicit `and(...)` inside one clause.
-import { and } from '@prisma/orm-postgres/orm-client';
-await db.orm.public.Sale
-  .where((s) => and(s.day.gte(start), s.day.lte(end)))
-  .all();
+import { and } from "@prisma/orm-postgres/orm-client";
+await db.orm.public.Sale.where((s) => and(s.day.gte(start), s.day.lte(end))).all();
 ```
 
 The two forms emit the same SQL. Pick chained `.where()` when each clause adds a separate condition that reads as its own thought; pick `and(...)` when one logical predicate happens to have two parts and you want the visual grouping. Don't reach for a `between` helper — there isn't one.
@@ -188,23 +179,20 @@ The two forms emit the same SQL. Pick chained `.where()` when each clause adds a
 **Combinators** (`and`, `or`, `not`) compose predicates, and **relation predicates** (`.some(...)`, `.none(...)`, `.every(...)`) recurse into a relation. `.some()` and `.none()` take an optional predicate — `u.posts.none()` means "has no posts", `u.posts.some()` means "has at least one" — while `.every(...)` requires one: `u.posts.every((p) => p.published.eq(true))`. The combinators are exported from the façade's `orm-client` subpath:
 
 ```typescript
-import { and, or, not } from '@prisma/orm-postgres/orm-client';
+import { and, or, not } from "@prisma/orm-postgres/orm-client";
 
-await db.orm.public.User
-  .where((u) =>
-    and(
-      or(u.kind.eq('admin'), u.email.ilike('%@example.com')),
-      not(u.posts.none((p) => p.title.ilike('%draft%'))),
-    ),
-  )
-  .all();
+await db.orm.public.User.where((u) =>
+  and(
+    or(u.kind.eq("admin"), u.email.ilike("%@example.com")),
+    not(u.posts.none((p) => p.title.ilike("%draft%"))),
+  ),
+).all();
 ```
 
 **Sorting and pagination.** `.orderBy(...)` accepts a single lambda or an array of lambdas. Each calls `.asc()` / `.desc()` on a field, an extension-operation result, a to-one relation's field, or a to-many relation's `count(...)`. Every `.asc()` / `.desc()` takes `{ nulls: 'first' | 'last' }`. `.limit(n)` limits; `.offset(n)` offsets.
 
 ```typescript
-await db.orm.public.Post
-  .where((p) => p.authorId.eq(userId))
+await db.orm.public.Post.where((p) => p.authorId.eq(userId))
   .orderBy([(p) => p.createdAt.desc(), (p) => p.id.desc()])
   .limit(20)
   .all();
@@ -213,14 +201,12 @@ await db.orm.public.Post
 **Cursor pagination.** Call `.cursor({ field: lastValue })` after `.orderBy(...)` to resume from a known position. `.cursor(...)` and `.distinctOn(...)` require a prior `orderBy` — the type system enforces this on the collection they are called on, so a cast on the argument does not get past it. Direction (forward or backward) follows the sort: ascending order means "greater than the cursor value", descending means "less than".
 
 ```typescript
-const page1 = await db.orm.public.Post
-  .orderBy((p) => p.createdAt.desc())
+const page1 = await db.orm.public.Post.orderBy((p) => p.createdAt.desc())
   .limit(20)
   .all();
 
 const last = page1[page1.length - 1]!;
-const page2 = await db.orm.public.Post
-  .orderBy((p) => p.createdAt.desc())
+const page2 = await db.orm.public.Post.orderBy((p) => p.createdAt.desc())
   .cursor({ createdAt: last.createdAt })
   .limit(20)
   .all();
@@ -229,21 +215,13 @@ const page2 = await db.orm.public.Post
 **Ordering by a relation.** A to-one relation (`1:1`, `N:1`) exposes the related model's orderable fields; a to-many relation (`1:N`, `N:M`) exposes `count(predicate?)`, through the junction for `N:M`. One hop only. Each lowers to a correlated scalar subquery, so the main query gains no join.
 
 ```typescript
-await db.orm.public.Post
-  .orderBy([(p) => p.author.name.asc(), (p) => p.id.asc()])
-  .all();
+await db.orm.public.Post.orderBy([(p) => p.author.name.asc(), (p) => p.id.asc()]).all();
 
-await db.orm.public.User
-  .orderBy((u) => u.posts.count((p) => p.views.gt(10)).desc())
-  .all();
+await db.orm.public.User.orderBy((u) => u.posts.count((p) => p.views.gt(10)).desc()).all();
 
-await db.orm.public.User
-  .orderBy((u) => u.tags.count().desc())
-  .all();
+await db.orm.public.User.orderBy((u) => u.tags.count().desc()).all();
 
-await db.orm.public.User
-  .orderBy((u) => u.invitedBy.name.desc({ nulls: 'last' }))
-  .all();
+await db.orm.public.User.orderBy((u) => u.invitedBy.name.desc({ nulls: "last" })).all();
 ```
 
 A missing related row (null foreign key) orders as `NULL`. To-one relations have no `count`; to-many relations expose no fields.
@@ -257,11 +235,10 @@ Cursor keys must match fields in the active `orderBy`. For a composite `orderBy`
 The concept: `.include('<relation>', (branch) => branch.<chain>)` adds a relation branch to the parent query. The branch is its own collection — compose `.where` / `.select` / `.orderBy` / `.limit` on it just like the parent.
 
 ```typescript
-await db.orm.public.User
-  .select('id', 'email')
-  .include('posts', (post) =>
+await db.orm.public.User.select("id", "email")
+  .include("posts", (post) =>
     post
-      .select('id', 'title', 'createdAt')
+      .select("id", "title", "createdAt")
       .orderBy((p) => p.createdAt.desc())
       .limit(5),
   )
@@ -270,36 +247,36 @@ await db.orm.public.User
 // → Array<{ id, email, posts: Array<{ id, title, createdAt }> }>
 ```
 
-**Reduce a to-many relation to a scalar.** A refinement callback may return a *reducer* — `count()`, `sum(field)`, `avg(field)`, `min(field)`, `max(field)`, plus the lossless `countBigInt()`, `sumBigInt(field)`, and `avgDecimal(field)` — instead of a collection. The parent's relation field then carries that one value rather than an array. Reducers exist only inside an `include(...)` callback; calling one elsewhere throws.
+**Reduce a to-many relation to a scalar.** A refinement callback may return a _reducer_ — `count()`, `sum(field)`, `avg(field)`, `min(field)`, `max(field)`, plus the lossless `countBigInt()`, `sumBigInt(field)`, and `avgDecimal(field)` — instead of a collection. The parent's relation field then carries that one value rather than an array. Reducers exist only inside an `include(...)` callback; calling one elsewhere throws.
 
 ```typescript
-await db.orm.public.User.include('posts', (posts) => posts.count()).all();
+await db.orm.public.User.include("posts", (posts) => posts.count()).all();
 // → Array<{ ...user, posts: number }> — a parent with no posts reads 0
 
-await db.orm.public.User.include('posts', (posts) => posts.sum('views')).all();
+await db.orm.public.User.include("posts", (posts) => posts.sum("views")).all();
 // → Array<{ ...user, posts: number | null }>
 
-await db.orm.public.User.include('posts', (posts) => posts.avg('views')).all();
+await db.orm.public.User.include("posts", (posts) => posts.avg("views")).all();
 // → Array<{ ...user, posts: number | null }>
 
-await db.orm.public.User.include('posts', (posts) => posts.min('views')).all();
-await db.orm.public.User.include('posts', (posts) => posts.max('views')).all();
+await db.orm.public.User.include("posts", (posts) => posts.min("views")).all();
+await db.orm.public.User.include("posts", (posts) => posts.max("views")).all();
 // → Array<{ ...user, posts: number | null }>
 
 // The lossless form, for a total that may outgrow a JS number:
-await db.orm.public.User.include('posts', (posts) => posts.sumBigInt('views')).all();
+await db.orm.public.User.include("posts", (posts) => posts.sumBigInt("views")).all();
 // → Array<{ ...user, posts: bigint | null }>
 
 // Several sub-views of one relation at once:
-await db.orm.public.User.include('posts', (posts) =>
+await db.orm.public.User.include("posts", (posts) =>
   posts.combine({ recent: posts.limit(3), total: posts.count() }),
 ).all();
 // → Array<{ ...user, posts: { recent: Post[]; total: number } }>
 ```
 
-A reducer's result type is the one the target declares for that aggregate — the same types *Workflow — Aggregates* tabulates below, including the `null` a field-taking reducer answers for a parent with no related rows. The reducer set is read from the contract, so an operation a target or extension contributes shows up as a reducer under its own name, with no client change.
+A reducer's result type is the one the target declares for that aggregate — the same types _Workflow — Aggregates_ tabulates below, including the `null` a field-taking reducer answers for a parent with no related rows. The reducer set is read from the contract, so an operation a target or extension contributes shows up as a reducer under its own name, with no client change.
 
-Nested `1:N → 1:N` includes (e.g. `User → posts → comments`) require the contract to advertise the `lateral` + `jsonAgg` capabilities for the active target. The Postgres adapter advertises both by default, so most apps get this for free; if the type system rejects a nested include with a *missing capability* error, route to `references/contract.md` to add the required capability declarations and use `references/queries.md` for query-shape guidance.
+Nested `1:N → 1:N` includes (e.g. `User → posts → comments`) require the contract to advertise the `lateral` + `jsonAgg` capabilities for the active target. The Postgres adapter advertises both by default, so most apps get this for free; if the type system rejects a nested include with a _missing capability_ error, route to `references/contract.md` to add the required capability declarations and use `references/queries.md` for query-shape guidance.
 
 ## Workflow — ORM writes
 
@@ -308,29 +285,28 @@ Nested `1:N → 1:N` includes (e.g. `User → posts → comments`) require the c
 const user = await db.orm.public.User.create({ id, email, displayName, kind, createdAt });
 
 // Create with selected return — narrows the return shape.
-const summary = await db.orm.public.User
-  .select('id', 'email', 'kind')
-  .create({ id, email, displayName, kind, createdAt });
+const summary = await db.orm.public.User.select("id", "email", "kind").create({
+  id,
+  email,
+  displayName,
+  kind,
+  createdAt,
+});
 
 // Update by predicate.
 await db.orm.public.User.where({ id }).update({ email: newEmail });
 
 // Update with selected return.
-await db.orm.public.User
-  .where({ id })
-  .select('id', 'email', 'kind')
-  .update({ email: newEmail });
+await db.orm.public.User.where({ id }).select("id", "email", "kind").update({ email: newEmail });
 
 // Delete by predicate.
 await db.orm.public.User.where({ id }).delete();
 
 // Upsert — typed by the create branch's shape.
-await db.orm.public.User
-  .select('id', 'email', 'kind', 'createdAt')
-  .upsert({
-    create: { id, email, displayName, kind, createdAt: new Date() },
-    update: { email, displayName, kind },
-  });
+await db.orm.public.User.select("id", "email", "kind", "createdAt").upsert({
+  create: { id, email, displayName, kind, createdAt: new Date() },
+  update: { email, displayName, kind },
+});
 ```
 
 The ORM returns inserted / updated rows by default. The `.returning(...)` selector lives on the SQL builder (next section), where you build a plan and execute it explicitly.
@@ -359,13 +335,18 @@ The same holds for an `if` with an early return, a `switch`, a loop and a reassi
 A custom collection class gives a model its own named queries. Extend `Collection` and pass the class to the client with the `collections` option. `db.orm` then returns the class for that model, and so does `tx.orm` inside `db.transaction(...)`:
 
 ```typescript
-import { Collection, type Filtered, type Ordered, type QueryFragment } from '@prisma/orm-postgres/orm-client';
-import postgres from '@prisma/orm-postgres/runtime';
-import { contractFromJson } from '@prisma/orm-postgres/static';
-import type { Contract } from './prisma/contract.d';
-import contractJson from './prisma/contract.json' with { type: 'json' };
+import {
+  Collection,
+  type Filtered,
+  type Ordered,
+  type QueryFragment,
+} from "@prisma/orm-postgres/orm-client";
+import postgres from "@prisma/orm-postgres/runtime";
+import { contractFromJson } from "@prisma/orm-postgres/static";
+import type { Contract } from "./prisma/contract.d";
+import contractJson from "./prisma/contract.json" with { type: "json" };
 
-class PostCollection extends Collection<Contract, 'Post'> {
+class PostCollection extends Collection<Contract, "Post"> {
   byAuthor(userId: string) {
     return this.where({ userId });
   }
@@ -376,7 +357,11 @@ class PostCollection extends Collection<Contract, 'Post'> {
 }
 
 export const contract = contractFromJson<Contract>(contractJson);
-export const db = postgres({ contract, url: process.env['DATABASE_URL']!, collections: { Post: PostCollection } });
+export const db = postgres({
+  contract,
+  url: process.env["DATABASE_URL"]!,
+  collections: { Post: PostCollection },
+});
 
 const { Post } = db.orm.public;
 ```
@@ -388,7 +373,7 @@ Class methods chain with each other and with the built-in methods, in any order,
 ```typescript
 await Post.byAuthor(userId).newestFirst().limit(20).all();
 await Post.where({ title }).byAuthor(userId).all();
-await Post.include('user').newestFirst().all();
+await Post.include("user").newestFirst().all();
 ```
 
 After `.select(...)` or `.variant(...)` the class methods are gone: those return the base `Collection` type. Call class methods before them. Inside an include refinement, the related collection is the base `Collection` type, not its registered class.
@@ -398,7 +383,8 @@ Inside a class body, a class method called on the result of another call loses w
 `with(fn)` calls a function with the collection and returns its result. The function is a query fragment, described in Workflow — Query fragments below, of type `QueryFragment<In, Out>`, so a query can be written once and applied to any collection of that class:
 
 ```typescript
-const newest: QueryFragment<PostCollection, Ordered<PostCollection>> = (posts) => posts.newestFirst();
+const newest: QueryFragment<PostCollection, Ordered<PostCollection>> = (posts) =>
+  posts.newestFirst();
 await Post.with(newest).limit(20).all();
 ```
 
@@ -419,7 +405,7 @@ A piece of a query used in several places is a function. Do not build a filter o
 **The same filter on several models.** Define a scope with `db.orm.fragment(fields, body)`; the method is named `fragment` because it cannot know whether the body only filters. Declare each field the fragment needs with the same builder the schema uses, from the `field` and `type` that `@prisma/orm-postgres/contract-builder` exports, adding `.optional()` for a field that may be null. The body sees only those fields:
 
 ```typescript
-import { field, type } from '@prisma/orm-postgres/contract-builder';
+import { field, type } from "@prisma/orm-postgres/contract-builder";
 
 const createdSince = (since: Temporal.Instant) =>
   db.orm.fragment({ createdAt: field.column(type.TimestamptzTemporal()) }, (rows) =>
@@ -435,12 +421,13 @@ Pick the builder whose codec matches the field's codec in `contract.d.ts`: a PSL
 For a filter used inside a larger `where`, a plain function of the row works too. Type the field with `CodecField<Contract, CodecId, Nullable>`, the type of any field with that codec:
 
 ```typescript
-import { and, type CodecField } from '@prisma/orm-postgres/orm-client';
+import { and, type CodecField } from "@prisma/orm-postgres/orm-client";
 
-type CreatedAt = CodecField<Contract, 'pg/timestamptz-temporal@1'>;
-const created = (since: Temporal.Instant) => (row: { createdAt: CreatedAt }) => row.createdAt.gte(since);
+type CreatedAt = CodecField<Contract, "pg/timestamptz-temporal@1">;
+const created = (since: Temporal.Instant) => (row: { createdAt: CreatedAt }) =>
+  row.createdAt.gte(since);
 
-await db.orm.public.Post.where((p) => and(created(since)(p), p.title.ilike('%orm%'))).all();
+await db.orm.public.Post.where((p) => and(created(since)(p), p.title.ilike("%orm%"))).all();
 ```
 
 Both forms check values against the codec's type, not the field's. For a field that narrows its codec's values, such as an enum stored as `pg/text@1`, they accept values the field would refuse: `row.kind.eq('superuser')` compiles even when `kind` has no such member. Write a filter on such a field inline, on the model, where the field's own type checks the value.
@@ -448,15 +435,15 @@ Both forms check values against the codec's type, not the field's. For a field t
 **The same `select` and `include` in several queries.** Define it once with `.fragment(...)` on the model's root collection, such as `db.orm.public.Post`, run it with `.with(...)`, and name its row with `CollectionRowOf`:
 
 ```typescript
-import type { CollectionRowOf } from '@prisma/orm-postgres/orm-client';
+import type { CollectionRowOf } from "@prisma/orm-postgres/orm-client";
 
 const postSummary = db.orm.public.Post.fragment((posts) =>
-  posts.select('id', 'title', 'createdAt').include('tags'),
+  posts.select("id", "title", "createdAt").include("tags"),
 );
 type PostSummary = CollectionRowOf<ReturnType<typeof postSummary>>;
 
 await db.orm.public.Post.where({ userId }).with(postSummary).limit(20).all();
-await db.orm.public.User.include('posts', (posts) => posts.with(postSummary)).all();
+await db.orm.public.User.include("posts", (posts) => posts.with(postSummary)).all();
 ```
 
 The body receives the plain collection of the model, without a custom class's methods. Apply the fragment before `.select(...)` or `.variant(...)`: it is refused on a collection they narrowed. Its result is always typed as the plain collection, even when the body keeps the row, so a custom class's methods are gone after it, and a filter or order applied before it is not recorded, although an earlier `.where(...)` still runs. `update` and `delete` are refused after it unless the body itself calls `where`, and `cursor` unless the body calls `orderBy`. For a filter on one model, use a class method or `db.orm.fragment`. A fragment for one model refuses a collection of another model or namespace at run time with `ORM.ARGUMENT_INVALID`. Calling `.fragment(...)` on a collection with chained calls throws `ORM.ARGUMENT_INVALID`, because the fragment is built from the model alone; a filter, an order or an include before it, or a receiver typed by a type parameter such as `this` in a class method, is a compile error. Inside a class method, chain on `this` directly instead.
@@ -464,10 +451,11 @@ The body receives the plain collection of the model, without a custom class's me
 **A field to order by, from a request.** Pass the request's string to `orderByField` with the fields the endpoint allows. Do not index the field proxy with the raw string:
 
 ```typescript
-import { orderByField } from '@prisma/orm-postgres/orm-client';
+import { orderByField } from "@prisma/orm-postgres/orm-client";
 
-await db.orm.public.Post
-  .orderBy(orderByField(db.orm.public.Post, input.orderBy, input.direction, ['title', 'createdAt']))
+await db.orm.public.Post.orderBy(
+  orderByField(db.orm.public.Post, input.orderBy, input.direction, ["title", "createdAt"]),
+)
   .limit(20)
   .all();
 ```
@@ -481,15 +469,12 @@ const totals = await db.orm.public.User.aggregate((aggregate) => ({
   totalUsers: aggregate.count(),
 }));
 
-const adminTotals = await db.orm.public.User
-  .where({ kind: 'admin' })
-  .aggregate((aggregate) => ({
-    adminUsers: aggregate.count(),
-  }));
+const adminTotals = await db.orm.public.User.where({ kind: "admin" }).aggregate((aggregate) => ({
+  adminUsers: aggregate.count(),
+}));
 
 // Group-by + aggregate.
-const byKind = await db.orm.public.User
-  .groupBy('kind')
+const byKind = await db.orm.public.User.groupBy("kind")
   .having((having) => having.count().gte(minUsers))
   .aggregate((aggregate) => ({
     totalUsers: aggregate.count(),
@@ -500,19 +485,19 @@ const byKind = await db.orm.public.User
 
 **The bare operations answer as JS numbers. The suffixed ones answer losslessly.** An aggregate's type is the one its target declares and its nullability matches SQL semantics, both read from the contract. On PostgreSQL:
 
-| Aggregate | Type | Empty result |
-| --- | --- | --- |
-| `count()` | `number` | `0` |
-| `countBigInt()` | `bigint` | `0n` |
-| `sum(field)` over `int2` / `int4` / `int8` / `BigIntNumber` | `number \| null` | `null` (SQL `SUM` over zero rows is `NULL`) |
-| `sumBigInt(field)` over any integer | `bigint \| null` | `null` |
-| `sum(field)` over `float4` / `float8` | `number \| null` | `null` |
-| `sum(field)` over `numeric` | decimal `string \| null` | `null` |
-| `sum(field)` over `UnboundedInt` | `bigint \| null` — that column's own family | `null` |
-| `avg(field)` over any integer | `number \| null` | `null` |
-| `avgDecimal(field)` over any integer or `numeric` | decimal `string \| null` | `null` |
-| `avg(field)` over a float | `number \| null` | `null` |
-| `min(field)` / `max(field)` | the column's own type `\| null` — `text` where the column is `varchar` | `null` |
+| Aggregate                                                   | Type                                                                   | Empty result                                |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| `count()`                                                   | `number`                                                               | `0`                                         |
+| `countBigInt()`                                             | `bigint`                                                               | `0n`                                        |
+| `sum(field)` over `int2` / `int4` / `int8` / `BigIntNumber` | `number \| null`                                                       | `null` (SQL `SUM` over zero rows is `NULL`) |
+| `sumBigInt(field)` over any integer                         | `bigint \| null`                                                       | `null`                                      |
+| `sum(field)` over `float4` / `float8`                       | `number \| null`                                                       | `null`                                      |
+| `sum(field)` over `numeric`                                 | decimal `string \| null`                                               | `null`                                      |
+| `sum(field)` over `UnboundedInt`                            | `bigint \| null` — that column's own family                            | `null`                                      |
+| `avg(field)` over any integer                               | `number \| null`                                                       | `null`                                      |
+| `avgDecimal(field)` over any integer or `numeric`           | decimal `string \| null`                                               | `null`                                      |
+| `avg(field)` over a float                                   | `number \| null`                                                       | `null`                                      |
+| `min(field)` / `max(field)`                                 | the column's own type `\| null` — `text` where the column is `varchar` | `null`                                      |
 
 **`count()`, and `sum` over an integer column, throw outside ±(2^53 − 1) — they never round.** Those two are the results a guarded integer codec produces. The rows above the guard does not reach: `sum` over `numeric`, `UnboundedInt`, or a float column, and every `avg`, which is a fraction already. The error is `RUNTIME.DECODE_FAILED` (`… value must be an integer within the safe integer range, got …`), and it fires on the include path too. That is the trade the defaults make: a `number` you can compare, serialise, and do arithmetic with, and a loud failure instead of a quietly wrong total. Switch that one call to `sumBigInt` / `countBigInt` where the magnitude is real.
 
@@ -520,34 +505,34 @@ const byKind = await db.orm.public.User
 
 **SQLite states the same policy.** `count`, `sum` over integers, and `avg` all read as `number`; `countBigInt` and `sumBigInt` are there too. There is no `avgDecimal` — SQLite has no exact decimal type, so the method does not exist on a SQLite contract.
 
-**The ORM's `having(...)` stays a `number`.** Its comparand is typed `number` outright, whatever result type the aggregate carries, so `having.count().gte(minUsers)` takes a plain number — the value is inlined as a SQL literal and compared inside the database. Only the aggregate's *result*, the value that reaches your code, carries its target's type. The lossless variants are projection-only and have no HAVING method at all.
+**The ORM's `having(...)` stays a `number`.** Its comparand is typed `number` outright, whatever result type the aggregate carries, so `having.count().gte(minUsers)` takes a plain number — the value is inlined as a SQL literal and compared inside the database. Only the aggregate's _result_, the value that reaches your code, carries its target's type. The lossless variants are projection-only and have no HAVING method at all.
 
 **The SQL builder types its comparands differently.** `fns.gt(a, b)` types both operands from one codec, so a literal compared against an aggregate follows that aggregate's result codec — `fns.gt(fns.count(), 1)`, not `1n`. That applies in `having(...)`, in `where(...)`, and inside any larger expression.
 
 Nullability isn't a typing bug — it's faithful to what the database returns. Coalesce client-side when you want zero-fill:
 
 ```typescript
-const revenue = await db.orm.public.Sale
-  .where((s) => s.day.gte(start))
-  .aggregate((a) => ({ total: a.sum('amount') }));
+const revenue = await db.orm.public.Sale.where((s) => s.day.gte(start)).aggregate((a) => ({
+  total: a.sum("amount"),
+}));
 // revenue.total: number | null
 
-const safe = revenue.total ?? 0;   // ← apply at the consumption site, not in the aggregate spec.
+const safe = revenue.total ?? 0; // ← apply at the consumption site, not in the aggregate spec.
 ```
 
 If `?? 0` is showing up on every aggregate, that's a signal you're calling `sum` (or peers) over potentially-empty filters — which is exactly when SQL returns NULL. The pattern is correct; the typing is honest.
 
 ## Workflow — SQL builder (`db.sql.<ns>.<table>`)
 
-The concept: `db.sql.<ns>.<table>` is a table-shaped builder that produces a *plan*. The plan is a serialisable description of the query (AST + parameters); you run it through the client. Pick the method by the result the plan declares: `db.query(plan)` for rows (it returns the same `AsyncIterableResult` as `.all()`, so `await` it for an array), `db.execute(plan)` for a write with no `RETURNING` (it resolves `{ affectedRows }` and returns no rows). The builder gives you the lanes the ORM doesn't express — explicit `JOIN`, arbitrary expression projection, target-specific operations through extension helpers — without dropping to raw SQL.
+The concept: `db.sql.<ns>.<table>` is a table-shaped builder that produces a _plan_. The plan is a serialisable description of the query (AST + parameters); you run it through the client. Pick the method by the result the plan declares: `db.query(plan)` for rows (it returns the same `AsyncIterableResult` as `.all()`, so `await` it for an array), `db.execute(plan)` for a write with no `RETURNING` (it resolves `{ affectedRows }` and returns no rows). The builder gives you the lanes the ORM doesn't express — explicit `JOIN`, arbitrary expression projection, target-specific operations through extension helpers — without dropping to raw SQL.
 
 ```typescript
 // src/queries/posts.ts — adjust the relative import to match file depth.
-import { db } from '../prisma/db';
+import { db } from "../prisma/db";
 
 // Select with predicate and limit.
 const plan = db.sql.public.post
-  .select('id', 'title', 'userId', 'createdAt')
+  .select("id", "title", "userId", "createdAt")
   .where((f, fns) => fns.eq(f.userId, userId))
   .limit(limit)
   .build();
@@ -563,7 +548,7 @@ The `.where(...)` callback receives `(fields, fns)` — `fields` is the field pr
 // Insert and return selected columns. `insert()` takes an array of rows.
 const plan = db.sql.public.user
   .insert([{ email, displayName, kind }])
-  .returning('id', 'email')
+  .returning("id", "email")
   .build();
 const [row] = await db.query(plan);
 
@@ -571,7 +556,7 @@ const [row] = await db.query(plan);
 const updatePlan = db.sql.public.user
   .update({ email: newEmail })
   .where((f, fns) => fns.eq(f.id, userId))
-  .returning('id', 'email')
+  .returning("id", "email")
   .build();
 const rows = await db.query(updatePlan);
 
@@ -592,17 +577,17 @@ Each row must include every column that is not nullable and has no default; leav
 ```typescript
 // Project a computed expression alongside model fields.
 const plan = db.sql.public.cafe
-  .select('id', 'name')
-  .select('meters', (f, fns) => fns.distanceSphere(f.location, point))
-  .orderBy((f, fns) => fns.distanceSphere(f.location, point), { direction: 'asc' })
-  .orderBy((f) => f.id, { direction: 'asc' })
+  .select("id", "name")
+  .select("meters", (f, fns) => fns.distanceSphere(f.location, point))
+  .orderBy((f, fns) => fns.distanceSphere(f.location, point), { direction: "asc" })
+  .orderBy((f) => f.id, { direction: "asc" })
   .limit(limit)
   .build();
 const rows = await db.query(plan);
 
 // Self-join with an alias.
 db.sql.public.post
-  .innerJoin(db.sql.public.post.as('p2'), (f, fns) => fns.ne(f.p1.userId, f.p2.userId))
+  .innerJoin(db.sql.public.post.as("p2"), (f, fns) => fns.ne(f.p1.userId, f.p2.userId))
   // ...
   .build();
 ```
@@ -611,15 +596,16 @@ The SQL builder's `.orderBy(column, { direction, nulls })` takes the same null p
 
 ## Workflow — Transactions
 
-The concept: `db.transaction(fn)` opens a transaction and passes a `tx` context to the callback. `tx` offers the client's query members with the same types, and each runs inside the transaction: `sql`, `orm` (with the client's custom collection classes), `raw`, `prepare`, `query(plan)` (rows) and `execute(plan)` (affected count), plus `toSql`, `enums` and `nativeEnums`. A prepared statement runs on what it is given, so `ps.query(tx, params)` runs inside the transaction. See *Workflow — Transactions* in `references/runtime.md` for raw SQL and `tx.prepare`. The transaction commits on the callback's successful return and rolls back on any thrown error.
+The concept: `db.transaction(fn)` opens a transaction and passes a `tx` context to the callback. `tx` offers the client's query members with the same types, and each runs inside the transaction: `sql`, `orm` (with the client's custom collection classes), `raw`, `prepare`, `query(plan)` (rows) and `execute(plan)` (affected count), plus `toSql`, `enums` and `nativeEnums`. A prepared statement runs on what it is given, so `ps.query(tx, params)` runs inside the transaction. See _Workflow — Transactions_ in `references/runtime.md` for raw SQL and `tx.prepare`. The transaction commits on the callback's successful return and rolls back on any thrown error.
 
 ```typescript
 await db.transaction(async (tx) => {
   const user = await tx.orm.public.User.create({ id, email });
-  await tx.orm.public.Post.create({ userId: user.id, title: 'hello' });
+  await tx.orm.public.Post.create({ userId: user.id, title: "hello" });
 
   // SQL-builder plan inside the transaction — no RETURNING, so `execute`.
-  const plan = tx.sql.public.post.update({ status: 'archived' })
+  const plan = tx.sql.public.post
+    .update({ status: "archived" })
     .where((f, fns) => fns.lt(f.createdAt, cutoff))
     .build();
   const { affectedRows } = await tx.execute(plan);
@@ -639,11 +625,15 @@ await db.transaction(async (tx) => {
 
   // SQL builder: the same lock on a plan.
   const [row] = await tx.query(
-    tx.sql.public.product.select('id', 'stock').where((f, fns) => fns.eq(f.id, id)).forUpdate().build(),
+    tx.sql.public.product
+      .select("id", "stock")
+      .where((f, fns) => fns.eq(f.id, id))
+      .forUpdate()
+      .build(),
   );
 
   // Work queue: claim the next unclaimed job, skipping jobs other workers hold.
-  const job = await tx.orm.public.Job.where({ state: 'queued' })
+  const job = await tx.orm.public.Job.where({ state: "queued" })
     .orderBy((j) => j.createdAt.asc())
     .forUpdate({ skipLocked: true })
     .first();
@@ -658,16 +648,16 @@ On Postgres both `db.sql` and `db.orm` are keyed by storage namespace (the Postg
 
 ```typescript
 // db.sql.<namespace>.<table>
-const plan = db.sql.public.user.select('id', 'email').build();
-const authPlan = db.sql.auth.users.select('id', 'token').build();
+const plan = db.sql.public.user.select("id", "email").build();
+const authPlan = db.sql.auth.users.select("id", "token").build();
 const rows = await db.query(plan);
 
 // db.orm.<namespace>.<Model>
-const user = await db.orm.public.User.create({ id: 1, email: 'a@x.io' });
-const authUser = await db.orm.auth.User.create({ id: 2, token: 'tok' });
+const user = await db.orm.public.User.create({ id: 1, email: "a@x.io" });
+const authUser = await db.orm.auth.User.create({ id: 2, token: "tok" });
 ```
 
-There is no flat `db.sql.user` / `db.orm.User` on the Postgres façade (`Db` is "one facet per storage namespace, and nothing else"); reaching for one is a type error. The flat spelling belongs to SQLite, whose façade exposes its single unbound namespace directly — see `references/queries.md` § *Namespace-aware accessors*.
+There is no flat `db.sql.user` / `db.orm.User` on the Postgres façade (`Db` is "one facet per storage namespace, and nothing else"); reaching for one is a type error. The flat spelling belongs to SQLite, whose façade exposes its single unbound namespace directly — see `references/queries.md` § _Namespace-aware accessors_.
 
 Cross-namespace relations (e.g. `public.Profile` → `auth.User`) follow the same `.include()` syntax; the ORM resolves the correct schema-qualified join automatically.
 
@@ -681,7 +671,7 @@ Cross-namespace relations (e.g. `public.Profile` → `auth.User`) follow the sam
 6. **Trying to `db.sql.from(tables.user)`.** That surface does not exist. The builder is table-shaped: `db.sql.<ns>.<tableName>.select(...)`. There is no `db.schema.tables` either.
 7. **Reading rows with `execute`.** Plans run through the client: `db.query(plan)` for rows, `db.execute(plan)` for a non-returning write (`{ affectedRows }`). Inside a transaction, `tx.query(plan)` / `tx.execute(plan)`. `execute` never yields rows — a `select` or `.returning(...)` plan passed to it gives you statistics, not data.
 8. **Setting `capabilities: { lateral: true }` in `prisma.config.ts`.** The ORM config (`ormConfig({...})`) does not take `capabilities`. Capabilities are declared by the active adapter and become part of the emitted contract; the Postgres adapter advertises `lateral`, `jsonAgg`, and `returning` out of the box. Enable extension capabilities through `extensions: [...]` in the config (see `references/contract.md`).
-9. **Confabulating a TypedSQL or `.stream()` surface.** Neither exists. Raw SQL does: the client's raw lane, ``db.raw.sql`…` ``. Reusable statements do: `db.prepare(...)` (see *Prepared statements* in [`queries.md`](./queries.md)). Streaming: `for await` over a read terminal or `runtime.query(plan)` — with the caveats in *Streaming* in [`queries.md`](./queries.md).
+9. **Confabulating a TypedSQL or `.stream()` surface.** Neither exists. Raw SQL does: the client's raw lane, ``db.raw.sql`…` ``. Reusable statements do: `db.prepare(...)` (see _Prepared statements_ in [`queries.md`](./queries.md)). Streaming: `for await` over a read terminal or `runtime.query(plan)` — with the caveats in _Streaming_ in [`queries.md`](./queries.md).
 10. **Mixing the ORM mutation return with `db.query(plan)` / `db.execute(plan)`.** ORM terminals issue the query themselves and return rows. `query` and `execute` are for plans.
 11. **Adding a `cursor()` to a relation, count, operation or `nulls` order.** It throws `ORM.ARGUMENT_INVALID`. Use `.limit(n).offset(n)`, or order by plain columns.
 12. **Ordering grouped rows by an aggregate metric.** The grouped collection supports `.orderBy(...)` on group keys plus `.limit(...)` / `.offset(...)`, but it cannot order by an aggregate alias such as `SUM(amount)`. Sorting the materialized aggregate result in JS is fine at small cardinalities; for large grouped result sets, drop to `db.sql.<ns>.<table>`.
@@ -699,7 +689,7 @@ Cross-namespace relations (e.g. `public.Profile` → `auth.User`) follow the sam
 - [ ] Used `.first()` / `.first({ pk })` for single-row reads — not `.all()`.
 - [ ] Coalesced `sum` / `avg` / `min` / `max` results at the consumption site when zero-fill is desired, with a zero of the aggregate's own type — did NOT coalesce `count()`, which is `number` and never null.
 - [ ] Reached for `countBigInt` / `sumBigInt` / `avgDecimal` where the value can outgrow a JS number or the exact decimal matters — `count()` and `sum` over an integer column throw `RUNTIME.DECODE_FAILED` outside ±(2^53 − 1) rather than rounding, and `avg` rounds as any double does.
-- [ ] Compared and serialised aggregate *results* as what they are — a `bigint` from a suffixed variant needs `0n` literals and `String(value)` rather than bare `JSON.stringify` — leaving the ORM's `having(...)` operands as numbers, and matching each SQL-builder comparison literal to the aggregate's own result codec (`fns.gt(fns.count(), 1)`).
+- [ ] Compared and serialised aggregate _results_ as what they are — a `bigint` from a suffixed variant needs `0n` literals and `String(value)` rather than bare `JSON.stringify` — leaving the ORM's `having(...)` operands as numbers, and matching each SQL-builder comparison literal to the aggregate's own result codec (`fns.gt(fns.count(), 1)`).
 - [ ] Expressed ranges as chained `.where(...)` clauses or a single `and(...)` clause — did NOT reach for a non-existent `.between(...)` operator.
 - [ ] For cursor pagination, used `.orderBy(...).cursor({ field: lastValue }).limit(n).all()` — did NOT hand-write a `.where(p => p.field.lt(cursor))` workaround when the `.cursor()` API serves the same purpose.
 - [ ] For ORM combinators, imported `and` / `or` / `not` from `@prisma/orm-postgres/orm-client`.
@@ -707,4 +697,4 @@ Cross-namespace relations (e.g. `public.Profile` → `auth.User`) follow the sam
 - [ ] Ran SQL-builder plans via `db.query(plan)` when they return rows and `db.execute(plan)` only for non-returning writes (`tx.query` / `tx.execute` inside a transaction). Passed `insert()` an array of rows.
 - [ ] Wrapped multi-statement work in `db.transaction(async (tx) => { ... })` where atomicity matters.
 - [ ] For top-N grouped aggregates at meaningful scale, dropped to `db.sql.<ns>.<table>` rather than JS-side sort + slice over `groupBy(...).aggregate(...)`.
-- [ ] Did NOT confabulate TypedSQL, `.stream()`, `db.batch`, `.between(...)`, a collection-level `.count()`, a `capabilities` field on the config, or a `db.sql.from(tables.user)` API — routed to *What Prisma 8 doesn't do yet* / `references/feedback.md` instead. Raw SQL is spelled `db.raw.sql`, not `db.sql.raw`.
+- [ ] Did NOT confabulate TypedSQL, `.stream()`, `db.batch`, `.between(...)`, a collection-level `.count()`, a `capabilities` field on the config, or a `db.sql.from(tables.user)` API — routed to _What Prisma 8 doesn't do yet_ / `references/feedback.md` instead. Raw SQL is spelled `db.raw.sql`, not `db.sql.raw`.

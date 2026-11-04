@@ -180,9 +180,9 @@ Before:
 export const db = postgresServerless<Contract>({ contractJson });
 
 // src/orm-client/client.ts
-import type { Runtime } from '@prisma/orm-postgres/family-runtime';
-import type { ExecutionContext } from '@prisma/orm-postgres/relational-core/query-lane-context';
-import { db } from '../prisma/db';
+import type { Runtime } from "@prisma/orm-postgres/family-runtime";
+import type { ExecutionContext } from "@prisma/orm-postgres/relational-core/query-lane-context";
+import { db } from "../prisma/db";
 
 const context = db.context as ExecutionContext<Contract>;
 
@@ -191,10 +191,10 @@ export function createOrmClient(runtime: Runtime) {
 }
 
 // src/worker.ts
-import { db } from './prisma/db';
+import { db } from "./prisma/db";
 
 await using runtime = await db.connect({ url: env.HYPERDRIVE.connectionString });
-const rows = await runtime.query(db.sql.public.user.select('id').build());
+const rows = await runtime.query(db.sql.public.user.select("id").build());
 const users = await createOrmClient(runtime).User.newestFirst().all();
 ```
 
@@ -209,13 +209,13 @@ After:
 export const postgres = postgresServerless<Contract>({ contractJson });
 
 // src/orm-client/client.ts
-import { orm } from '@prisma/orm-postgres/orm-client';
-import type { PostgresServerlessConnection } from '@prisma/orm-postgres/serverless';
-import type { Contract } from '../prisma/contract.d';
-import { UserCollection } from './collections';
+import { orm } from "@prisma/orm-postgres/orm-client";
+import type { PostgresServerlessConnection } from "@prisma/orm-postgres/serverless";
+import type { Contract } from "../prisma/contract.d";
+import { UserCollection } from "./collections";
 
 export function createOrmClient(
-  db: Pick<PostgresServerlessConnection<Contract>, 'runtime' | 'context'>,
+  db: Pick<PostgresServerlessConnection<Contract>, "runtime" | "context">,
 ) {
   return orm({
     runtime: db.runtime(),
@@ -225,10 +225,10 @@ export function createOrmClient(
 }
 
 // src/worker.ts
-import { postgres } from './prisma/db';
+import { postgres } from "./prisma/db";
 
 await using db = await postgres.connect({ url: env.HYPERDRIVE.connectionString });
-const rows = await db.runtime().query(db.sql.public.user.select('id').build());
+const rows = await db.runtime().query(db.sql.public.user.select("id").build());
 const users = await createOrmClient(db).User.newestFirst().all();
 ```
 
@@ -245,12 +245,17 @@ This change is optional. The connection builds an ORM client and runs transactio
 Before:
 
 ```ts
-import { withTransaction } from '@prisma/orm-postgres/family-runtime';
+import { withTransaction } from "@prisma/orm-postgres/family-runtime";
 
 await using runtime = await db.connect({ url });
 const posts = await orm({ runtime, context }).public.Post.where({ userId }).all();
 await withTransaction(runtime, async (tx) => {
-  await tx.execute(db.sql.public.user.update({ displayName }).where((f, fns) => fns.eq(f.id, userId)).build());
+  await tx.execute(
+    db.sql.public.user
+      .update({ displayName })
+      .where((f, fns) => fns.eq(f.id, userId))
+      .build(),
+  );
 });
 ```
 
@@ -260,7 +265,12 @@ After:
 await using db = await postgres.connect({ url });
 const posts = await db.orm.public.Post.where({ userId }).all();
 await db.transaction(async (tx) => {
-  await tx.execute(db.sql.public.user.update({ displayName }).where((f, fns) => fns.eq(f.id, userId)).build());
+  await tx.execute(
+    db.sql.public.user
+      .update({ displayName })
+      .where((f, fns) => fns.eq(f.id, userId))
+      .build(),
+  );
 });
 ```
 
@@ -299,10 +309,10 @@ export const streamingPostgres = postgresServerless<Contract>({
 });
 
 // src/worker.ts
-import { postgres, streamingPostgres } from './prisma/db';
+import { postgres, streamingPostgres } from "./prisma/db";
 
 // in fetch
-const routePostgres = url.pathname === '/cursor/large' ? streamingPostgres : postgres;
+const routePostgres = url.pathname === "/cursor/large" ? streamingPostgres : postgres;
 await using db = await routePostgres.connect({ url: env.HYPERDRIVE.connectionString });
 ```
 
@@ -311,7 +321,7 @@ await using db = await routePostgres.connect({ url: env.HYPERDRIVE.connectionStr
 ```ts
 import postgresServerless, {
   type PostgresServerlessCursorOptions,
-} from '@prisma/orm-postgres/serverless';
+} from "@prisma/orm-postgres/serverless";
 
 const cursor: PostgresServerlessCursorOptions = { disabled: true };
 
@@ -321,7 +331,7 @@ export const postgres = postgresServerless<Contract>({ contractJson, cursor });
 After:
 
 ```ts
-import postgresServerless from '@prisma/orm-postgres/serverless';
+import postgresServerless from "@prisma/orm-postgres/serverless";
 
 export const postgres = postgresServerless<Contract>({ contractJson });
 ```
@@ -338,13 +348,19 @@ export const streamingPostgres = postgresServerless<Contract>({
 After:
 
 ```ts
-export const streamingPostgres = postgresServerless<Contract>({ contractJson, cursor: { batchSize: 50 } });
+export const streamingPostgres = postgresServerless<Contract>({
+  contractJson,
+  cursor: { batchSize: 50 },
+});
 ```
 
 A batch size alone, before and after (unchanged):
 
 ```ts
-export const streamingPostgres = postgresServerless<Contract>({ contractJson, cursor: { batchSize: 100 } });
+export const streamingPostgres = postgresServerless<Contract>({
+  contractJson,
+  cursor: { batchSize: 100 },
+});
 ```
 
 ## `date-time-default-stored-in-canonical-form`
@@ -360,14 +376,14 @@ model Event {
 }
 ```
 
-| Column type | Written | Stored before | Stored now |
-| --- | --- | --- | --- |
-| `DateTime`, `Timestamptz` | `2024-01-01 01:00:00+01` | as written | `2024-01-01T00:00:00Z` (UTC) |
-| `Timestamp` | `2024-01-01 12:34:56.500` | as written | `2024-01-01T12:34:56.5` |
-| `Date` | `0044-03-15 BC` | as written | `-000043-03-15` |
-| `Time` | `12:34` | as written | `12:34:00` |
-| `Timetz` | `12:34:56+02` | as written | `12:34:56+02:00` |
-| SQLite `DateTime` | `2024-01-01 01:00:00+01:00` | as written | `2024-01-01T00:00:00Z` |
+| Column type               | Written                     | Stored before | Stored now                   |
+| ------------------------- | --------------------------- | ------------- | ---------------------------- |
+| `DateTime`, `Timestamptz` | `2024-01-01 01:00:00+01`    | as written    | `2024-01-01T00:00:00Z` (UTC) |
+| `Timestamp`               | `2024-01-01 12:34:56.500`   | as written    | `2024-01-01T12:34:56.5`      |
+| `Date`                    | `0044-03-15 BC`             | as written    | `-000043-03-15`              |
+| `Time`                    | `12:34`                     | as written    | `12:34:00`                   |
+| `Timetz`                  | `12:34:56+02`               | as written    | `12:34:56+02:00`             |
+| SQLite `DateTime`         | `2024-01-01 01:00:00+01:00` | as written    | `2024-01-01T00:00:00Z`       |
 
 A year outside 0000 to 9999 is a sign and six digits, and year 0000 is 1 BC. `prisma contract infer` and `prisma contract print` print a date or time default in the same form.
 
@@ -397,15 +413,15 @@ SQLite cannot change a column's default in place, so new rows keep taking the ol
 Field "Event.localAt": pg/timestamp holds no UTC offset, but "2024-01-01T00:00:00Z" has one. Leave it out, as in "2024-01-01T12:34:56".
 ```
 
-| Refused | Fix |
-| --- | --- |
-| an offset on `Timestamp`, `Date` or `Time` | remove the offset, or make the column `DateTime` if it holds an instant |
-| no offset on `DateTime`, `Timestamptz`, `Timetz` or SQLite `DateTime` | add `Z` for UTC, or the offset, as in `2024-01-01T00:00:00Z` |
-| a time on a `Date` column, or a date on a `Time` or `Timetz` column | remove the part the column does not hold |
-| more than six digits after the decimal point, or more than three on a SQLite `DateTime`, which holds milliseconds | round to six digits or fewer, or three on SQLite |
-| a date or time that does not exist, such as `2024-02-30`, `25:00:00` or `24:00:00` | write a real date or time; for `24:00:00`, write ``@default(sql`'24:00:00'::time`)`` |
-| a date outside the range the column's type holds, such as a date before 24 November 4714 BC on Postgres | write a date inside the range the message names |
-| a ` BC` suffix on a SQLite `DateTime` | write a signed year, as in `-000043-03-15T00:00:00Z` for 44 BC |
+| Refused                                                                                                           | Fix                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| an offset on `Timestamp`, `Date` or `Time`                                                                        | remove the offset, or make the column `DateTime` if it holds an instant              |
+| no offset on `DateTime`, `Timestamptz`, `Timetz` or SQLite `DateTime`                                             | add `Z` for UTC, or the offset, as in `2024-01-01T00:00:00Z`                         |
+| a time on a `Date` column, or a date on a `Time` or `Timetz` column                                               | remove the part the column does not hold                                             |
+| more than six digits after the decimal point, or more than three on a SQLite `DateTime`, which holds milliseconds | round to six digits or fewer, or three on SQLite                                     |
+| a date or time that does not exist, such as `2024-02-30`, `25:00:00` or `24:00:00`                                | write a real date or time; for `24:00:00`, write ``@default(sql`'24:00:00'::time`)`` |
+| a date outside the range the column's type holds, such as a date before 24 November 4714 BC on Postgres           | write a date inside the range the message names                                      |
+| a ` BC` suffix on a SQLite `DateTime`                                                                             | write a signed year, as in `-000043-03-15T00:00:00Z` for 44 BC                       |
 
 Run `prisma contract emit` after each fix until it succeeds.
 
